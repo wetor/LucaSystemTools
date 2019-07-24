@@ -13,7 +13,22 @@ namespace ProtScript
         private FileStream fs;
         private BinaryReader br;
         private Dictionary<byte[], string> dic_encode = new Dictionary<byte[], string>();
-
+        enum Type
+        {
+            Byte,
+            Byte2,
+            Byte3,
+            Byte4,
+            UInt16,
+            UInt32,
+            String,
+            StringUTF8,
+            StringSJIS,
+            PString,
+            PStringUTF8,
+            PStringSJIS,
+            Script
+        }
 
         private void DicInit()
         {
@@ -34,7 +49,7 @@ namespace ProtScript
             FileStream ffs = new FileStream(path + ".out", FileMode.Create);
             BinaryWriter bw = new BinaryWriter(ffs);
             FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
-            StreamWriter tsw = new StreamWriter(tfs);
+            StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
             while (fs.Position < fs.Length)
             {
                 byte[] tmp = ReadCodeBytes();
@@ -63,180 +78,329 @@ namespace ProtScript
         {
             if (!CanRead()) return new byte[0];
             List<byte> datas = new List<byte>();
-            int len = br.ReadByte();
-            while (len <= 0)
+            byte tmp = br.ReadByte();
+            while(tmp == 0x00)
             {
-                datas.Add(0xFF);
-                datas.Add(0xFF);
-                len = br.ReadByte();
+                datas.Add(0xFF);//00:FF  //01:FE  02:FD
+                tmp = br.ReadByte();
             }
-            if (len >= 2)
-            {
-                byte tmp = br.ReadByte();
-                if (tmp != 0)
-                    datas.Add(tmp);
-
-                datas.AddRange(br.ReadBytes(len - 2));
-            }
-            else
-            {
-                datas.AddRange(br.ReadBytes(len - 1));
-            }
+            fs.Seek(-1, SeekOrigin.Current);
            
+            UInt16 len = br.ReadUInt16();
+            Console.WriteLine("{0}  {1}", fs.Position,len);
+            //datas.AddRange(BitConverter.GetBytes(len));
+            datas.AddRange(br.ReadBytes(len - 2));
             return datas.ToArray();
+        }
+        private string DeCompressFunc(ref BinaryReader tbr, params Type[] values)
+        {
+            string retn = "";
+            bool end_flag = false;
+            for (int i = 0; i < values.Length; i++)
+            {
+                string tmp = "";
+                switch (values[i])
+                {
+                    case Type.Byte:
+                    case Type.Byte2:
+                    case Type.Byte3:
+                    case Type.Byte4:
+                        tmp = "[" + Byte2Hex(tbr.ReadBytes((int)values[i] + 1)) + "]";
+                        break;
+                    case Type.UInt16:
+                        tmp = tbr.ReadUInt16().ToString();
+                        break;
+                    case Type.UInt32:
+                        tmp = tbr.ReadUInt32().ToString();
+                        break;
+                    case Type.String:
+                        {
+                            List<byte> buff = new List<byte>();
+                            byte[] btmp = tbr.ReadBytes(2);
+                            while (btmp[0] != 0x00 || btmp[1] != 0x00)
+                            {
+                                buff.AddRange(btmp);
+                                btmp = tbr.ReadBytes(2);
+                            }
+                            tmp = "\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
+                            break;
+                        }
+                    case Type.StringUTF8:
+                    case Type.StringSJIS:
+                        {
+                            List<byte> buff = new List<byte>();
+                            byte btmp = tbr.ReadByte();
+                            while (btmp != 0x00)
+                            {
+                                buff.Add(btmp);
+                                btmp = tbr.ReadByte();
+                            }
+                            if(values[i]== Type.StringUTF8)
+                                tmp = Encoding.UTF8.GetString(buff.ToArray()) ;
+                            else if(values[i] == Type.StringSJIS)
+                                tmp = Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray());
+                            tmp = "\"" + tmp + "\"";
+                            break;
+                        }
+                    case Type.PString:
+                    case Type.PStringUTF8:
+                    case Type.PStringSJIS:
+                        {
+                            int len = tbr.ReadUInt16();
+                            if(values[i] == Type.PString)
+                                tmp = Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) ;
+                            else if (values[i] == Type.PStringUTF8)
+                                tmp = Encoding.UTF8.GetString(tbr.ReadBytes(len * 2));
+                            else if (values[i] == Type.PStringSJIS)
+                                tmp = Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2));
+                            tmp = "\"" + tmp + "\"";
+                            break;
+                        }
+                    case Type.Script:
+                        byte scr_index = tbr.ReadByte();
+                        if (script_list.ContainsKey(scr_index))
+                            tmp = script_list[scr_index];
+                        else
+                            tmp = "[" + Byte2Hex(tbr.ReadBytes(1)) + "]";
+                        break;
+                    default:
+                        break;
+                }
+
+                retn += tmp + ((i != values.Length - 1 || end_flag) ? " " : "");
+                if (end_flag) break;
+
+            }
+            return retn;
         }
         private string DeCompressCode(byte[] line, bool rec = false)
         {
             MemoryStream ms = new MemoryStream(line);
             BinaryReader mbr = new BinaryReader(ms);
-            string flag = script_list[mbr.ReadByte()];
-            string flag2 = "[" + mbr.ReadByte().ToString() + "]";
-
             string retn = "";
-            switch (flag)
+            byte scr_index = mbr.ReadByte();
+            if (!script_list.ContainsKey(scr_index))
             {
-                case "    "://00
-                    {
-                        retn = flag + " " + DeCompressCode(mbr.ReadBytes((int)ms.Length - 2), true);
-                        break;
-                    }
-                //case "EQUV"://02
-                //    {
-                //        retn = flag + " " + flag2;
-                //        ms.Seek(-1, SeekOrigin.Current);
-                //        retn += " EQUV " + DeCompressCode(mbr.ReadBytes((int)ms.Length - 1), true);
-                //        break;
-                //    }
-                case "MESSAGE"://0x22
-                    {
-                        retn = flag + " " + flag2;
-                        int num = mbr.ReadUInt16();
-                        int index = mbr.ReadUInt16();
-                        int unknow0 = mbr.ReadUInt16();
-                        int len = mbr.ReadUInt16();
-                        string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
-                        int end = mbr.ReadUInt16();
-                        string end2 = script_list[mbr.ReadByte()];
-                        retn += " " + num.ToString() + " " + index.ToString() + " " + unknow0.ToString() + " " + str + " " + end.ToString() + " " + end2;
-                        
-                        break;
-                    }
-                case "SELECT"://0x25
-                    {
-                        retn = flag + " " + flag2;
-                        for(int i = 0;i<5;i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-                        int len = mbr.ReadUInt16();
-                        string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
-                        retn += " " + str;
-                        for (int i = 0; i < 4; i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-
-                        break;
-                    }
-                case "LOG"://0x27
-                    {
-                        retn = flag + " " + flag2;
-                        retn += " " + script_list[mbr.ReadByte()];
-                        for (int i = 0; i < 3; i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-                        int len = mbr.ReadUInt16();
-                        string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
-                        retn += " " + str;
-                        retn += " " + mbr.ReadUInt16().ToString();
-                        retn += " " + script_list[mbr.ReadByte()];
-                        break;
-                    }
-                case "TASK"://0x6E
-                    {
-                        retn = flag + " " + flag2;
-                        for (int i = 0; i < 8; i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-                        int len = mbr.ReadUInt16();
-                        string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
-                        retn += " " + str;
-                        retn += " " + mbr.ReadUInt16().ToString();
-                        break;
-                    }
-                case "FARCALL"://0x16
-                    {
-                        retn = flag + " " + flag2;
-                        for (int i = 0; i < 2; i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-                        List<byte> buff = new List<byte>();
-                        byte tmp = mbr.ReadByte();
-                        while (tmp != 0x00)
-                        {
-                            buff.Add(tmp);
-                            tmp = mbr.ReadByte();
-                        }
-                        string str = Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray());
-                        retn += " " + str;
-                        retn += " " + mbr.ReadUInt16().ToString();
-                        retn += " " + mbr.ReadUInt16().ToString();
-                        break;
-                    }
-                case "VARSTR"://0x0B
-                    {
-                        retn = flag + " " + flag2;
-                        for (int i = 0; i < 3; i++)
-                        {
-                            retn += " " + mbr.ReadUInt16().ToString();
-                        }
-                        List<byte> buff = new List<byte>();
-                        byte[] tmp = mbr.ReadBytes(2);
-                        while (tmp[0] != 0x00 || tmp[1] != 0x00)
-                        {
-                            buff.AddRange(tmp);
-                            tmp = mbr.ReadBytes(2);
-                        }
-
-                        string str = Encoding.Unicode.GetString(buff.ToArray());
-                        retn += " " + str;
-
-                        break;
-                    }
-                    
-                case "IFN"://0x13
-                    {
-                        retn = flag + " " + flag2;
-                        int unknow0 = mbr.ReadUInt16();
-                        string str0 = "";
-                        byte tmp = mbr.ReadByte();
-                        while (tmp != 0x00)
-                        {
-                            str0 += (char)tmp;
-                            tmp = mbr.ReadByte();
-                        }
-                        int unknow1 = mbr.ReadUInt16();
-                        retn+= " " + unknow0.ToString()+" "+ str0 + " " + unknow1.ToString();
-
-                        break;
-                    }
-                default:
-                    retn = flag + " " + flag2;
-                    
-                        
-                    break;
+                if(scr_index == 0xFF) //0x00
+                    retn = "    " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
+                else
+                {
+                    retn = "[" + scr_index.ToString("X2") + "]";
+                    if (ms.Length - ms.Position > 0)
+                        retn += " " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
+                }
             }
-            while (ms.Position + 1 < ms.Length)
+            else
             {
-                retn += " " + mbr.ReadUInt16().ToString();
+                string flag = script_list[scr_index];
+                byte flag2 = mbr.ReadByte();
+                switch (flag)
+                {
+                    case "MESSAGE":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16,Type.PString);
+                        break;
+                    case "SELECT":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
+                        break;
+                    case "LOG":
+                        retn += " " + DeCompressFunc(ref mbr, Type.Script, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
+                        break;
+                    case "IFN":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
+                        break;
+                    case "TASK":
+                        if (flag2 == 0x03)
+                        {
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
+                            UInt16 tmp = mbr.ReadUInt16();
+                            retn += " " + tmp.ToString();
+                            if (tmp == 1)
+                                retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
+                        }
+                        if (flag2 == 0x01)
+                        {
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
+                        }
+
+                        break;
+                    case "FARCALL":
+                        if (flag2 == 0x00)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16,  Type.Byte,  Type.StringSJIS);
+                        if (flag2 == 0x01)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS);
+                        break;
+                    case "JUMP":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS);
+                        break;
+                    case "VARSTR":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.String);
+                        break;
+                    case "EQU":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS);
+                        break;
+                    case "GOTO":
+                        if (flag2 == 0x00)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
+                        if (flag2 == 0x01)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt32);
+                        break;
+                    default:
+                        break;
+
+                }
+                while (ms.Position + 1 < ms.Length)
+                {
+                    retn += " [" + Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
+                }
+                if (ms.Position < ms.Length)
+                {
+                    retn += " [" + mbr.ReadByte().ToString("X2") + "]";
+                }
+                retn = flag + " " + "[" + flag2.ToString("X2") + "]" + retn;
+#if false
+                switch (flag)
+                {
+                    //case "EQUV"://02
+                    //    {
+                    //        retn = flag + " " + flag2;
+                    //        ms.Seek(-1, SeekOrigin.Current);
+                    //        retn += " EQUV " + DeCompressCode(mbr.ReadBytes((int)ms.Length - 1), true);
+                    //        break;
+                    //    }
+                    case "MESSAGE"://0x22
+                        {
+                            retn = flag + " " + flag2;
+                            int num = mbr.ReadUInt16();
+                            int index = mbr.ReadUInt16();
+                            int unknow0 = mbr.ReadUInt16();
+                            int len = mbr.ReadUInt16();
+                            string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
+                            int end = mbr.ReadUInt16();
+                            string end2 = script_list[mbr.ReadByte()];
+                            retn += " " + num.ToString() + " " + index.ToString() + " " + unknow0.ToString() + " " + str + " " + end.ToString() + " " + end2;
+
+                            break;
+                        }
+                    case "SELECT"://0x25
+                        {
+                            retn = flag + " " + flag2;
+                            for (int i = 0; i < 5; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+                            int len = mbr.ReadUInt16();
+                            string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
+                            retn += " " + str;
+                            for (int i = 0; i < 4; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+
+                            break;
+                        }
+                    case "LOG"://0x27
+                        {
+                            retn = flag + " " + flag2;
+                            retn += " " + script_list[mbr.ReadByte()];
+                            for (int i = 0; i < 3; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+                            int len = mbr.ReadUInt16();
+                            string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
+                            retn += " " + str;
+                            retn += " " + mbr.ReadUInt16().ToString();
+                            retn += " " + script_list[mbr.ReadByte()];
+                            break;
+                        }
+                    case "TASK"://0x6E
+                        {
+                            retn = flag + " " + flag2;
+                            for (int i = 0; i < 8; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+                            int len = mbr.ReadUInt16();
+                            string str = Encoding.Unicode.GetString(mbr.ReadBytes(len * 2));
+                            retn += " " + str;
+                            retn += " " + mbr.ReadUInt16().ToString();
+                            break;
+                        }
+                    case "FARCALL"://0x16
+                        {
+                            retn = flag + " " + flag2;
+                            for (int i = 0; i < 2; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+                            List<byte> buff = new List<byte>();
+                            byte tmp = mbr.ReadByte();
+                            while (tmp != 0x00)
+                            {
+                                buff.Add(tmp);
+                                tmp = mbr.ReadByte();
+                            }
+                            string str = Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray());
+                            retn += " " + str;
+                            retn += " " + mbr.ReadUInt16().ToString();
+                            retn += " " + mbr.ReadUInt16().ToString();
+                            break;
+                        }
+                    case "VARSTR"://0x0B
+                        {
+                            retn = flag + " " + flag2;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                retn += " " + mbr.ReadUInt16().ToString();
+                            }
+                            List<byte> buff = new List<byte>();
+                            byte[] tmp = mbr.ReadBytes(2);
+                            while (tmp[0] != 0x00 || tmp[1] != 0x00)
+                            {
+                                buff.AddRange(tmp);
+                                tmp = mbr.ReadBytes(2);
+                            }
+
+                            string str = Encoding.Unicode.GetString(buff.ToArray());
+                            retn += " " + str;
+
+                            break;
+                        }
+
+                    case "IFN"://0x13
+                        {
+                            retn = flag + " " + flag2;
+                            int unknow0 = mbr.ReadUInt16();
+                            string str0 = "";
+                            byte tmp = mbr.ReadByte();
+                            while (tmp != 0x00)
+                            {
+                                str0 += (char)tmp;
+                                tmp = mbr.ReadByte();
+                            }
+                            int unknow1 = mbr.ReadUInt16();
+                            retn += " " + unknow0.ToString() + " " + str0 + " " + unknow1.ToString();
+
+                            break;
+                        }
+                    default:
+                        retn = flag + " " + flag2;
+
+
+                        break;
+                }
+                while (ms.Position + 1 < ms.Length)
+                {
+                    retn += " " + mbr.ReadUInt16().ToString();
+                }
+                if (ms.Position < ms.Length)
+                {
+                    retn += " " + "[" + mbr.ReadByte().ToString() + "]";
+                }
+#endif
             }
-            if (ms.Position < ms.Length)
-            {
-                retn += " " + "[" + mbr.ReadByte().ToString() + "]";
-            }
+            
+            
             if (retn != "    " && retn != "" && !rec)
             {
                Console.WriteLine(retn);
@@ -376,8 +540,31 @@ namespace ProtScript
             {0x75,"ENROLL_FRAMEENABLE"            },
             {0x76,"DATEEYECATCH"                  },
             {0x77,"MAPSELECT"                     },
-            {0x78,"UNKNOWN"                       },
-            {0xFF,"    "                          }
+            {0x78,"UNKNOWN"                       }
         };
+        public byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
+        {
+            
+            hexString = hexString.Replace(" ", "");
+            if ((hexString.Length % 2) != 0)
+                hexString += " ";
+            byte[] returnBytes = new byte[hexString.Length / 2];
+            for (int i = 0; i < returnBytes.Length; i++)
+                returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+            return returnBytes;
+        }
+        public string Byte2Hex(byte[] bytes)// 字节数组转16进制字符串
+        {
+            string returnStr = "";
+            if (bytes != null)
+            {
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    returnStr += bytes[i].ToString("X2");
+                }
+            }
+            return returnStr;
+        }
     }
+
 }
