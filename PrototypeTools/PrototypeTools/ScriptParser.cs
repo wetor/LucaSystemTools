@@ -12,7 +12,7 @@ namespace ProtScript
         private string path;
         private FileStream fs;
         private BinaryReader br;
-        private Dictionary<byte[], string> dic_encode = new Dictionary<byte[], string>();
+        private bool debug = false;
         enum Type
         {
             Byte,
@@ -22,53 +22,48 @@ namespace ProtScript
             UInt16,
             UInt32,
             String,
-            StringUTF8,
             StringSJIS,
             PString,
-            PStringUTF8,
             PStringSJIS,
             Script
         }
 
-        private void DicInit()
+        public ScriptParser(string file,bool debug = false)
         {
-            dic_encode.Add(new byte[] { 0x22, 0x03 }, "VARSTR");
-            dic_encode.Add(new byte[] { 0x00, 0x00, 0x0B }, "VARSTR_END");
-            //VARSTR [num] [index] [unknow] [string] 
-        }
-        public ScriptParser(string file)
-        {
+            Console.WriteLine(Byte2Hex(CompressFunc("    MESSAGE [03] (88) (4) (2) p\"`船内アナウンス@「まもなく鳥白島、鳥白町漁港に到着します」\" [0000] [0B]"), true));
+            Console.ReadKey();
+            this.debug = debug;
             path = file;
             fs = new FileStream(path, FileMode.Open);
             br = new BinaryReader(fs);
-            DicInit();
+
+
+
+
+            
         }
         public void Decompress()
         {
             if (!CanRead()) return;
-            FileStream ffs = new FileStream(path + ".out", FileMode.Create);
-            BinaryWriter bw = new BinaryWriter(ffs);
+            //FileStream ffs = new FileStream(path + ".out", FileMode.Create);
+            //BinaryWriter bw = new BinaryWriter(ffs);
             FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
             StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
             while (fs.Position < fs.Length)
             {
                 byte[] tmp = ReadCodeBytes();
-               
                 tsw.WriteLine(DeCompressCode(tmp));
-                bw.Write(tmp);
-                while (ffs.Position % 16 != 0)
-                {
-                    bw.Write((byte)0xff);
-                }
-                bw.Write(new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff });
+                //bw.Write(tmp);
+                //while (ffs.Position % 16 != 0)
+                //{
+                //    bw.Write((byte)0xff);
+                //}
+                //bw.Write(new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff });
             }
             tsw.Close();
             tfs.Close();
-            bw.Close();
-            ffs.Close();
-
-
-            ;
+            //bw.Close();
+            //ffs.Close();
         }
         private bool CanRead()
         {
@@ -76,22 +71,109 @@ namespace ProtScript
         }
         private byte[] ReadCodeBytes()
         {
+            //[0x00 / null] [len:UInt16] [bytes]
+            //              |<-     len      ->|
             if (!CanRead()) return new byte[0];
             List<byte> datas = new List<byte>();
             byte tmp = br.ReadByte();
             while(tmp == 0x00)
             {
-                datas.Add(0xFF);//00:FF  //01:FE  02:FD
+                datas.Add(0xFF);        
                 tmp = br.ReadByte();
             }
             fs.Seek(-1, SeekOrigin.Current);
            
             UInt16 len = br.ReadUInt16();
-            Console.WriteLine("{0}  {1}", fs.Position,len);
+            if (debug)
+                Console.WriteLine("{0}  {1}", fs.Position,len);
             //datas.AddRange(BitConverter.GetBytes(len));
             datas.AddRange(br.ReadBytes(len - 2));
             return datas.ToArray();
         }
+        private byte[] CompressFunc(string code)
+        {
+            code += " ";
+            MemoryStream ms = new MemoryStream();
+            BinaryWriter mbw = new BinaryWriter(ms);
+
+            int i = 0;
+            while(i+4 <= code.Length && code.Substring(i,4) == "    ")
+            {
+                mbw.Write((byte)0x00);
+                i += 4;
+            }
+            int len_pos = (int)ms.Position;
+            mbw.Write(BitConverter.GetBytes((UInt16)0));//长度
+            string token = "";
+            bool script = true;
+            for(; i < code.Length; i++)
+            {
+                if (code[i]==' ')
+                {
+                    if (script)//仅一次
+                    {
+                        mbw.Write(compress_dic[token]);
+                        script = false;
+                    }
+                    else
+                    {
+                        switch (token[0])
+                        {
+                            case '['://byte
+                                mbw.Write(Hex2Byte(token.Substring(1, token.Length - 2)));
+                                break;
+                            case '('://uint16
+                                mbw.Write(BitConverter.GetBytes(Convert.ToInt16(token.Substring(1, token.Length - 2))));
+                                break;
+                            case '{'://uint32
+                                mbw.Write(BitConverter.GetBytes(Convert.ToInt32(token.Substring(1, token.Length - 2))));
+                                break;
+                            case 'u'://unicode string
+                                mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
+                                mbw.Write(new byte[] { 0x00, 0x00 });
+                                break;
+                            case 'j'://sjis string
+                                mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
+                                mbw.Write((byte)0x00);
+                                break;
+                            case 'p'://len unicode string
+                                mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
+                                mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
+                                break;
+                            case 's'://len sjis string
+                                mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
+                                mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
+                                
+                                break;
+                            default:
+                                break;
+
+                        }
+
+
+                    }
+                    token = "";
+                }
+                else
+                {
+                    token += code[i];
+                }
+
+            }
+            UInt16 len = (UInt16)(ms.Position - len_pos);
+            ms.Seek(len_pos,SeekOrigin.Begin);
+            mbw.Write(BitConverter.GetBytes(len));
+
+
+
+
+            byte[] retn = ms.ToArray();
+            mbw.Close();
+            ms.Close();
+            return retn;
+
+        }
+
         private string DeCompressFunc(ref BinaryReader tbr, params Type[] values)
         {
             string retn = "";
@@ -108,10 +190,10 @@ namespace ProtScript
                         tmp = "[" + Byte2Hex(tbr.ReadBytes((int)values[i] + 1)) + "]";
                         break;
                     case Type.UInt16:
-                        tmp = tbr.ReadUInt16().ToString();
+                        tmp = "(" + tbr.ReadUInt16().ToString() + ")";
                         break;
                     case Type.UInt32:
-                        tmp = tbr.ReadUInt32().ToString();
+                        tmp = "{" + tbr.ReadUInt32().ToString() + "}";
                         break;
                     case Type.String:
                         {
@@ -122,10 +204,9 @@ namespace ProtScript
                                 buff.AddRange(btmp);
                                 btmp = tbr.ReadBytes(2);
                             }
-                            tmp = "\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
+                            tmp = "u\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
                             break;
                         }
-                    case Type.StringUTF8:
                     case Type.StringSJIS:
                         {
                             List<byte> buff = new List<byte>();
@@ -135,31 +216,23 @@ namespace ProtScript
                                 buff.Add(btmp);
                                 btmp = tbr.ReadByte();
                             }
-                            if(values[i]== Type.StringUTF8)
-                                tmp = Encoding.UTF8.GetString(buff.ToArray()) ;
-                            else if(values[i] == Type.StringSJIS)
-                                tmp = Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray());
-                            tmp = "\"" + tmp + "\"";
+                            tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
                             break;
                         }
                     case Type.PString:
-                    case Type.PStringUTF8:
                     case Type.PStringSJIS:
                         {
                             int len = tbr.ReadUInt16();
                             if(values[i] == Type.PString)
-                                tmp = Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) ;
-                            else if (values[i] == Type.PStringUTF8)
-                                tmp = Encoding.UTF8.GetString(tbr.ReadBytes(len * 2));
+                                tmp = "p\"" + Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) + "\"";
                             else if (values[i] == Type.PStringSJIS)
-                                tmp = Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2));
-                            tmp = "\"" + tmp + "\"";
+                                tmp = "s\"" + Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2)) + "\"";
                             break;
                         }
                     case Type.Script:
                         byte scr_index = tbr.ReadByte();
-                        if (script_list.ContainsKey(scr_index))
-                            tmp = script_list[scr_index];
+                        if (decompress_dic.ContainsKey(scr_index))
+                            tmp = decompress_dic[scr_index];
                         else
                             tmp = "[" + Byte2Hex(tbr.ReadBytes(1)) + "]";
                         break;
@@ -179,7 +252,7 @@ namespace ProtScript
             BinaryReader mbr = new BinaryReader(ms);
             string retn = "";
             byte scr_index = mbr.ReadByte();
-            if (!script_list.ContainsKey(scr_index))
+            if (!decompress_dic.ContainsKey(scr_index))
             {
                 if(scr_index == 0xFF) //0x00
                     retn = "    " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
@@ -192,7 +265,7 @@ namespace ProtScript
             }
             else
             {
-                string flag = script_list[scr_index];
+                string flag = decompress_dic[scr_index];
                 byte flag2 = mbr.ReadByte();
                 switch (flag)
                 {
@@ -203,9 +276,12 @@ namespace ProtScript
                         retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
                         break;
                     case "LOG":
-                        retn += " " + DeCompressFunc(ref mbr, Type.Script, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
+                        retn += " " + DeCompressFunc(ref mbr, Type.Byte, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
                         break;
                     case "IFN":
+                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
+                        break;
+                    case "IFY":
                         retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
                         break;
                     case "TASK":
@@ -217,17 +293,17 @@ namespace ProtScript
                             if (tmp == 1)
                                 retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
                         }
-                        if (flag2 == 0x01)
-                        {
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
-                        }
+                        //if (flag2 == 0x01)
+                        //{
+                        //    retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
+                        //}
 
                         break;
                     case "FARCALL":
                         if (flag2 == 0x00)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16,  Type.Byte,  Type.StringSJIS);
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16,  Type.Byte,  Type.StringSJIS, Type.UInt16, Type.UInt16);
                         if (flag2 == 0x01)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS);
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS, Type.UInt16, Type.UInt16);
                         break;
                     case "JUMP":
                         retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS);
@@ -401,7 +477,7 @@ namespace ProtScript
             }
             
             
-            if (retn != "    " && retn != "" && !rec)
+            if (retn != "    " && retn != "" && !rec && debug)
             {
                Console.WriteLine(retn);
             }
@@ -418,7 +494,7 @@ namespace ProtScript
             br.Close();
             fs.Close();
         }
-        Dictionary<byte, string> script_list = new Dictionary<byte, string>
+        Dictionary<byte, string> decompress_dic = new Dictionary<byte, string>
         {
             {0x00,"EQU"                           },
             {0x01,"EQUN"                          },
@@ -542,9 +618,133 @@ namespace ProtScript
             {0x77,"MAPSELECT"                     },
             {0x78,"UNKNOWN"                       }
         };
+
+        Dictionary<string , byte> compress_dic = new Dictionary< string, byte>
+        {
+            {"EQU"                        ,0x00},
+            {"EQUN"                       ,0x01},
+            {"EQUV"                       ,0x02},
+            {"ADD"                        ,0x03},
+            {"SUB"                        ,0x04},
+            {"MUL"                        ,0x05},
+            {"DIV"                        ,0x06},
+            {"MOD"                        ,0x07},
+            {"AND"                        ,0x08},
+            {"OR"                         ,0x09},
+            {"RANDOM"                     ,0x0A},
+            {"VARSTR"                     ,0x0B},
+            {"VARSTR_ADD"                 ,0x0C},
+            {"SET"                        ,0x0D},
+            {"FLAGCLR"                    ,0x0E},
+            {"GOTO"                       ,0x0F},
+            {"ONGOTO"                     ,0x10},
+            {"GOSUB"                      ,0x11},
+            {"IFY"                        ,0x12},
+            {"IFN"                        ,0x13},
+            {"RETURN"                     ,0x14},
+            {"JUMP"                       ,0x15},
+            {"FARCALL"                    ,0x16},
+            {"FARRETURN"                  ,0x17},
+            {"JUMPPOINT"                  ,0x18},
+            {"END"                        ,0x19},
+            {"VARSTR_SET"                 ,0x1A},
+            {"VARSTR_ALLOC"               ,0x1B},
+            {"TALKNAME_SET"               ,0x1C},
+            {"ARFLAGSET"                  ,0x1D},
+            {"COLORBG_SET"                ,0x1E},
+            {"SPLINE_SET"                 ,0x1F},
+            {"SHAKELIST_SET"              ,0x20},
+            {"SCISSOR_TRIANGLELIST_SET"   ,0x21},
+            {"MESSAGE"                    ,0x22},//Message Add
+            {"MESSAGE_CLEAR"              ,0x23},
+            {"MESSAGE_WAIT"               ,0x24},
+            {"SELECT"                     ,0x25},
+            {"CLOSE_WINDOW"               ,0x26},
+            {"LOG"                        ,0x27},
+            {"LOG_PAUSE"                  ,0x28},
+            {"LOG_END"                    ,0x29},
+            {"VOICE"                      ,0x2A},
+            {"WAIT_COUNT"                 ,0x2B},
+            {"WAIT_TIME"                  ,0x2C},
+            {"WAIT_TEXTFEED"              ,0x2D},
+            {"FFSTOP"                     ,0x2E},
+            {"INIT"                       ,0x2F},
+            {"STOP"                       ,0x30},
+            {"IMAGELOAD"                  ,0x31},
+            {"IMAGEUPADTE"                ,0x32},
+            {"ARC"                        ,0x33},
+            {"MOVE"                       ,0x34},
+            {"MOVE2"                      ,0x35},
+            {"ROT"                        ,0x36},
+            {"PEND"                       ,0x37},
+            {"FADE"                       ,0x38},
+            {"SCALE"                      ,0x39},
+            {"SHAKE"                      ,0x3A},
+            {"SHAKELIST"                  ,0x3B},
+            {"BASE"                       ,0x3C},
+            {"MCMOVE"                     ,0x3D},
+            {"MCARC"                      ,0x3E},
+            {"MCROT"                      ,0x3F},
+            {"MCSHAKE"                    ,0x40},
+            {"MCFADE"                     ,0x41},
+            {"WAIT"                       ,0x42},
+            {"DRAW"                       ,0x43},
+            {"WIPE"                       ,0x44},
+            {"FRAMEON"                    ,0x45},
+            {"FRAMEOFF"                   ,0x46},
+            {"FW"                         ,0x47},
+            {"SCISSOR"                    ,0x48},
+            {"DELAY"                      ,0x49},
+            {"RASTER"                     ,0x4A},
+            {"TONE"                       ,0x4B},
+            {"SCALECOSSIN"                ,0x4C},
+            {"BMODE"                      ,0x4D},
+            {"SIZE"                       ,0x4E},
+            {"SPLINE"                     ,0x4F},
+            {"DISP"                       ,0x50},
+            {"MASK"                       ,0x51},
+            {"FACE"                       ,0x52},
+            {"SEPIA"                      ,0x53},
+            {"SEPIA_COLOR"                ,0x54},
+            {"CUSTOMMOVE"                 ,0x55},
+            {"SWAP"                       ,0x56},
+            {"ADDCOLOR"                   ,0x57},
+            {"SUBCOLOR"                   ,0x58},
+            {"SATURATION"                 ,0x59},
+            {"PRIORITY"                   ,0x5A},
+            {"UVWH"                       ,0x5B},
+            {"EVSCROLL"                   ,0x5C},
+            {"COLORLEVEL"                 ,0x5D},
+            {"QUAKE"                      ,0x5E},
+            {"BGM"                        ,0x5F},
+            {"BGM_WAITSTART"              ,0x60},
+            {"BGM_WAITFADE"               ,0x61},
+            {"BGM_PUSH"                   ,0x62},
+            {"BGM_POP"                    ,0x63},
+            {"SE"                         ,0x64},
+            {"SE_STOP"                    ,0x65},
+            {"SE_WAIT"                    ,0x66},
+            {"SE_WAIT_COUNT"              ,0x67},
+            {"VOLUME"                     ,0x68},
+            {"MOVIE"                      ,0x69},
+            {"SETCGFLAG"                  ,0x6A},
+            {"EX"                         ,0x6B},
+            {"TROPHY"                     ,0x6C},
+            {"SETBGMFLAG"                 ,0x6D},
+            {"TASK"                       ,0x6E},
+            {"PRINTF"                     ,0x6F},
+            {"WAIT_FADE"                  ,0x70},
+            {"MYSCALE"                    ,0x71},
+            {"MYSCALE_CLEAR"              ,0x72},
+            {"ENROLL_WAIT"                ,0x73},
+            {"ENROLL_BGSTART"             ,0x74},
+            {"ENROLL_FRAMEENABLE"         ,0x75},
+            {"DATEEYECATCH"               ,0x76},
+            {"MAPSELECT"                  ,0x77},
+            {"UNKNOWN"                    ,0x78}
+        };
         public byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
         {
-            
             hexString = hexString.Replace(" ", "");
             if ((hexString.Length % 2) != 0)
                 hexString += " ";
@@ -553,7 +753,7 @@ namespace ProtScript
                 returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
             return returnBytes;
         }
-        public string Byte2Hex(byte[] bytes)// 字节数组转16进制字符串
+        public string Byte2Hex(byte[] bytes, bool de = false)// 字节数组转16进制字符串
         {
             string returnStr = "";
             if (bytes != null)
@@ -561,9 +761,10 @@ namespace ProtScript
                 for (int i = 0; i < bytes.Length; i++)
                 {
                     returnStr += bytes[i].ToString("X2");
+                    if (de) returnStr += " ";
                 }
             }
-            return returnStr;
+            return  returnStr;
         }
     }
 
