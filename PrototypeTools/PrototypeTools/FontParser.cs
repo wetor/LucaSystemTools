@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ Prot引擎.字库部分
+ info文件解析
+ */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +13,8 @@ namespace ProtFont
 {
     class FontInfo
     {
+        //作者：DeQxJ00
+        //时间：2019.1.17
         public void Export(string file)
         {
             //解释info12 之类的文件

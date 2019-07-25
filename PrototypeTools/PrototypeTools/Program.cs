@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using ProtScript;
-
+using ProtPak;
 namespace PrototypeTools
 {
     class Program
@@ -25,9 +25,11 @@ namespace PrototypeTools
             //    scr.Decompress();
             //    scr.Close();
             //}
-            ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
-            scr.Decompress();
-            scr.Close();
+            PAKManager.Unpack(work + @"OriginFile\FONT.PAK");
+            //ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
+            //scr.DeCompress();
+            //scr.Compress();
+            //scr.Close();
             Console.ReadKey();
 
         }

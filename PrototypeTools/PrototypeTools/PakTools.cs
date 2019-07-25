@@ -10,14 +10,47 @@ namespace ProtPak
 {
     public class PAKManager
     {
-        public static Entry[] Unpack(Stream Packget, string coding = "UTF-8")
+        public static void Unpack(string file,string name_coding = "UTF-8")
+        {
+            string OutDir = file + "_unpacked\\";
+            Stream Packget = new StreamReader(file).BaseStream;
+            uint header_len;
+            var Files = PAKManager.Unpack(Packget, out header_len, name_coding);
+            FileStream fs = new FileStream(file + ".pakhead", FileMode.Create);
+            Packget.Seek(0, SeekOrigin.Begin);
+            byte[] head = new byte[header_len];
+            Packget.Read(head, 0, head.Length);
+            fs.Write(head, 0, head.Length);
+
+            if (Directory.Exists(OutDir))
+                Directory.Delete(OutDir, true);
+            if (!Directory.Exists(OutDir))
+                Directory.CreateDirectory(OutDir);
+            int index = 0;
+            foreach (var File in Files)
+            {
+                string FN = OutDir + File.FileName;
+                int ID = 2;
+                while (System.IO.File.Exists(FN))
+                    FN = OutDir + File.FileName + "." + ID++;
+
+                Stream Output = new StreamWriter(FN).BaseStream;
+                File.Content.CopyTo(Output);
+                Output.Close();
+                Console.WriteLine("{0} {1} {2}", index++, File.FileName, File.Length);
+ 
+            }
+            fs.Close();
+            Packget.Close();
+        }
+        public static Entry[] Unpack(Stream Packget, out uint data_pos , string coding = "UTF-8")
         {
             var Files = new Entry[0];
             PAKHeader Header = new PAKHeader();
-            StructReader Reader = new StructReader(Packget, Encoding: Encoding.UTF8);
+            StructReader Reader = new StructReader(Packget, Encoding: Encoding.GetEncoding(coding));
             Reader.ReadStruct(ref Header);
             Reader.Seek(0x24, SeekOrigin.Begin);
-
+            data_pos = Header.HeaderLength;
             //Search for the First Offset
             while (Reader.PeekInt() != Header.HeaderLength / Header.BlockSize)
                 Reader.Seek(0x4, SeekOrigin.Current);
@@ -42,7 +75,7 @@ namespace ProtPak
                     }
 
                     Names[i] = Encoding.GetEncoding(coding).GetString(strArr.ToArray());
-                    Debug.WriteLine("{0}  {1}", Names[i], i);
+                    //Console.WriteLine("{0}  {1}", Names[i], i);
                     //Names[i] = Reader.ReadString(StringStyle.CString);
                 }
                 Reader.Seek(Off, SeekOrigin.Begin);

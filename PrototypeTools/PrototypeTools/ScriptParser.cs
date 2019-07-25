@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ Prot引擎.脚本部分
+ 脚本文件解析
+ 作者：Wetor
+ 时间：2019.7.25
+ */
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +19,7 @@ namespace ProtScript
         private FileStream fs;
         private BinaryReader br;
         private bool debug = false;
-        enum Type
+        private enum Type
         {
             Byte,
             Byte2,
@@ -30,19 +36,15 @@ namespace ProtScript
 
         public ScriptParser(string file,bool debug = false)
         {
-            Console.WriteLine(Byte2Hex(CompressFunc("    MESSAGE [03] (88) (4) (2) p\"`船内アナウンス@「まもなく鳥白島、鳥白町漁港に到着します」\" [0000] [0B]"), true));
-            Console.ReadKey();
+            //Console.WriteLine(Byte2Hex(CompressCode("    MESSAGE [03] (88) (4) (2) p\"`船内アナウンス@「まもなく鳥白島、鳥白町漁港に到着します」\" [0000] [0B]"), true));
+            //Console.ReadKey();
             this.debug = debug;
             path = file;
             fs = new FileStream(path, FileMode.Open);
             br = new BinaryReader(fs);
 
-
-
-
-            
         }
-        public void Decompress()
+        public void DeCompress()
         {
             if (!CanRead()) return;
             //FileStream ffs = new FileStream(path + ".out", FileMode.Create);
@@ -64,6 +66,23 @@ namespace ProtScript
             tfs.Close();
             //bw.Close();
             //ffs.Close();
+        }
+        public void Compress()
+        {
+            FileStream ifs = new FileStream(path + ".txt", FileMode.Open);
+            StreamReader isr = new StreamReader(ifs);
+
+            FileStream ofs = new FileStream(path + ".scr", FileMode.Create);
+            BinaryWriter obw = new BinaryWriter(ofs);
+            while (isr.Peek()>=0)
+            {
+                obw.Write(CompressCode(isr.ReadLine()));
+            }
+            obw.Close();
+            ofs.Close();
+            isr.Close();
+            ifs.Close();
+
         }
         private bool CanRead()
         {
@@ -90,7 +109,7 @@ namespace ProtScript
             datas.AddRange(br.ReadBytes(len - 2));
             return datas.ToArray();
         }
-        private byte[] CompressFunc(string code)
+        private byte[] CompressCode(string code)
         {
             code += " ";
             MemoryStream ms = new MemoryStream();
@@ -103,55 +122,53 @@ namespace ProtScript
                 i += 4;
             }
             int len_pos = (int)ms.Position;
-            mbw.Write(BitConverter.GetBytes((UInt16)0));//长度
+            mbw.Write(BitConverter.GetBytes((UInt16)0));//长度填充
             string token = "";
-            bool script = true;
+            bool str = false;
             for(; i < code.Length; i++)
             {
-                if (code[i]==' ')
+                if (code[i] == '\"') str = !str;
+                if (code[i]==' ' && !str)
                 {
-                    if (script)//仅一次
-                    {
-                        mbw.Write(compress_dic[token]);
-                        script = false;
-                    }
-                    else
-                    {
-                        switch (token[0])
-                        {
-                            case '['://byte
-                                mbw.Write(Hex2Byte(token.Substring(1, token.Length - 2)));
-                                break;
-                            case '('://uint16
-                                mbw.Write(BitConverter.GetBytes(Convert.ToInt16(token.Substring(1, token.Length - 2))));
-                                break;
-                            case '{'://uint32
-                                mbw.Write(BitConverter.GetBytes(Convert.ToInt32(token.Substring(1, token.Length - 2))));
-                                break;
-                            case 'u'://unicode string
-                                mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
-                                mbw.Write(new byte[] { 0x00, 0x00 });
-                                break;
-                            case 'j'://sjis string
-                                mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
-                                mbw.Write((byte)0x00);
-                                break;
-                            case 'p'://len unicode string
-                                mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
-                                mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
-                                break;
-                            case 's'://len sjis string
-                                mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
-                                mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
-                                
-                                break;
-                            default:
-                                break;
 
-                        }
-
+                    switch (token[0])
+                    {
+                        case '['://byte
+                            mbw.Write(Hex2Byte(token.Substring(1, token.Length - 2)));
+                            break;
+                        case '('://uint16
+                            mbw.Write(BitConverter.GetBytes(Convert.ToUInt16(token.Substring(1, token.Length - 2))));
+                            break;
+                        case '{'://uint32
+                            mbw.Write(BitConverter.GetBytes(Convert.ToUInt32(token.Substring(1, token.Length - 2))));
+                            break;
+                        case 'u'://unicode string + 00 00
+                            mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
+                            mbw.Write(new byte[] { 0x00, 0x00 });
+                            break;
+                        case 'j'://sjis string + 00
+                            mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
+                            mbw.Write((byte)0x00);
+                            break;
+                        case 'p'://len + unicode string
+                            mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
+                            mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
+                            break;
+                        case 's'://len + sjis string
+                            mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
+                            mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
+                            break;
+                        default:
+                            if (token[0] >= 'A' && token[0] <= 'Z' && compress_dic.ContainsKey(token))
+                                mbw.Write(compress_dic[token]);
+                            else
+                                throw new Exception("未知的指令或错误的数据格式:" + token);
+                            break;
 
                     }
+
+
+
                     token = "";
                 }
                 else
@@ -163,9 +180,6 @@ namespace ProtScript
             UInt16 len = (UInt16)(ms.Position - len_pos);
             ms.Seek(len_pos,SeekOrigin.Begin);
             mbw.Write(BitConverter.GetBytes(len));
-
-
-
 
             byte[] retn = ms.ToArray();
             mbw.Close();
@@ -196,27 +210,29 @@ namespace ProtScript
                         tmp = "{" + tbr.ReadUInt32().ToString() + "}";
                         break;
                     case Type.String:
-                        {
-                            List<byte> buff = new List<byte>();
-                            byte[] btmp = tbr.ReadBytes(2);
-                            while (btmp[0] != 0x00 || btmp[1] != 0x00)
-                            {
-                                buff.AddRange(btmp);
-                                btmp = tbr.ReadBytes(2);
-                            }
-                            tmp = "u\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
-                            break;
-                        }
                     case Type.StringSJIS:
                         {
                             List<byte> buff = new List<byte>();
-                            byte btmp = tbr.ReadByte();
-                            while (btmp != 0x00)
+                            if (values[i] == Type.String)
                             {
-                                buff.Add(btmp);
-                                btmp = tbr.ReadByte();
+                                byte[] btmp = tbr.ReadBytes(2);
+                                while (btmp[0] != 0x00 || btmp[1] != 0x00)
+                                {
+                                    buff.AddRange(btmp);
+                                    btmp = tbr.ReadBytes(2);
+                                }
+                                tmp = "u\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
                             }
-                            tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
+                            else if (values[i] == Type.StringSJIS)
+                            {
+                                byte btmp = tbr.ReadByte();
+                                while (btmp != 0x00)
+                                {
+                                    buff.Add(btmp);
+                                    btmp = tbr.ReadByte();
+                                }
+                                tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
+                            }
                             break;
                         }
                     case Type.PString:
@@ -234,7 +250,7 @@ namespace ProtScript
                         if (decompress_dic.ContainsKey(scr_index))
                             tmp = decompress_dic[scr_index];
                         else
-                            tmp = "[" + Byte2Hex(tbr.ReadBytes(1)) + "]";
+                            tmp = "[" + Byte2Hex(scr_index) + "]";
                         break;
                     default:
                         break;
@@ -258,7 +274,7 @@ namespace ProtScript
                     retn = "    " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
                 else
                 {
-                    retn = "[" + scr_index.ToString("X2") + "]";
+                    retn = "[" + Byte2Hex(scr_index) + "]";
                     if (ms.Length - ms.Position > 0)
                         retn += " " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
                 }
@@ -289,15 +305,10 @@ namespace ProtScript
                         {
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
                             UInt16 tmp = mbr.ReadUInt16();
-                            retn += " " + tmp.ToString();
+                            retn += " (" + tmp.ToString() + ")";
                             if (tmp == 1)
                                 retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
                         }
-                        //if (flag2 == 0x01)
-                        //{
-                        //    retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
-                        //}
-
                         break;
                     case "FARCALL":
                         if (flag2 == 0x00)
@@ -330,9 +341,9 @@ namespace ProtScript
                 }
                 if (ms.Position < ms.Length)
                 {
-                    retn += " [" + mbr.ReadByte().ToString("X2") + "]";
+                    retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
                 }
-                retn = flag + " " + "[" + flag2.ToString("X2") + "]" + retn;
+                retn = flag + " " + "[" + Byte2Hex(flag2) + "]" + retn;
 #if false
                 switch (flag)
                 {
@@ -492,9 +503,10 @@ namespace ProtScript
         {
 
             br.Close();
+
             fs.Close();
         }
-        Dictionary<byte, string> decompress_dic = new Dictionary<byte, string>
+        private Dictionary<byte, string> decompress_dic = new Dictionary<byte, string>
         {
             {0x00,"EQU"                           },
             {0x01,"EQUN"                          },
@@ -619,7 +631,7 @@ namespace ProtScript
             {0x78,"UNKNOWN"                       }
         };
 
-        Dictionary<string , byte> compress_dic = new Dictionary< string, byte>
+        private Dictionary<string , byte> compress_dic = new Dictionary< string, byte>
         {
             {"EQU"                        ,0x00},
             {"EQUN"                       ,0x01},
@@ -743,9 +755,11 @@ namespace ProtScript
             {"MAPSELECT"                  ,0x77},
             {"UNKNOWN"                    ,0x78}
         };
-        public byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
+        private byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
         {
             hexString = hexString.Replace(" ", "");
+            if (hexString.Substring(0, 2).ToLower() == "0x")
+                hexString.Remove(0, 2);
             if ((hexString.Length % 2) != 0)
                 hexString += " ";
             byte[] returnBytes = new byte[hexString.Length / 2];
@@ -753,7 +767,7 @@ namespace ProtScript
                 returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
             return returnBytes;
         }
-        public string Byte2Hex(byte[] bytes, bool de = false)// 字节数组转16进制字符串
+        private string Byte2Hex(byte[] bytes, bool space = false, bool head = false)// 字节数组转16进制字符串
         {
             string returnStr = "";
             if (bytes != null)
@@ -761,10 +775,14 @@ namespace ProtScript
                 for (int i = 0; i < bytes.Length; i++)
                 {
                     returnStr += bytes[i].ToString("X2");
-                    if (de) returnStr += " ";
+                    if (space && i < bytes.Length-1) returnStr += " ";
                 }
             }
-            return  returnStr;
+            return (head ? "0x" : "") + returnStr;
+        }
+        private string Byte2Hex(byte bytes)// 字节数组转16进制字符串
+        {
+            return bytes.ToString("X2");
         }
     }
 
