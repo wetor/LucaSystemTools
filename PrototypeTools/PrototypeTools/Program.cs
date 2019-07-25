@@ -25,7 +25,8 @@ namespace PrototypeTools
             //    scr.Decompress();
             //    scr.Close();
             //}
-            PAKManager.Unpack(work + @"OriginFile\FONT.PAK");
+            PAKManager.Pack(work + @"OriginFile\FONT.PAK.pakhead");
+            //PAKManager.Unpack(work + @"OriginFile\FONT2.PAK");
             //ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
             //scr.DeCompress();
             //scr.Compress();

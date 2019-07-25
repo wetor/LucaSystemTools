@@ -6,16 +6,103 @@ using System.Linq;
 using System.Text;
 using System.Diagnostics;
 
+
 namespace ProtPak
 {
     public class PAKManager
     {
+        //作者：Wetor
+        //时间：2019.7.25
+        public static void Pack(string file, string name_coding = "UTF-8")
+        {
+            string out_file = Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file);
+            string in_dir = out_file + "_unpacked\\";
+            out_file += ".out";
+            Stream header = new StreamReader(file).BaseStream;
+            PAKHeader pak_header = new PAKHeader();
+            StructReader Reader = new StructReader(header, Encoding: Encoding.GetEncoding(name_coding));
+            Reader.ReadStruct(ref pak_header);
+
+            BinaryWriter bw = new BinaryWriter(File.Open(out_file,FileMode.Create));
+            long save_pos = Reader.BaseStream.Position;
+            Reader.Seek(0, SeekOrigin.Begin);
+            bw.Write(Reader.ReadBytes((int)Reader.BaseStream.Length));//复制文件头信息
+            Reader.Seek(save_pos, SeekOrigin.Begin);
+
+
+            //从保存的文件头中读取文件名等信息
+            while (Reader.PeekInt() != pak_header.HeaderLength / pak_header.BlockSize)
+                Reader.Seek(0x4, SeekOrigin.Current);
+
+            bool Named = (pak_header.Flags & (uint)PackgetFlags.NamedFiles) != 0;
+            string[] Names = new string[pak_header.FileCount];
+            if (Named)
+            {
+                long Off = Reader.BaseStream.Position;
+                Reader.Seek(-0x4, SeekOrigin.Current);
+                Reader.Seek(Reader.ReadUInt32(), SeekOrigin.Begin);
+
+                for (uint i = 0; i < Names.Length; i++)
+                {
+                    List<byte> strArr = new List<byte> { };
+                    byte tmp = Reader.ReadByte();
+                    while (tmp != 0x00)
+                    {
+                        strArr.Add(tmp);
+                        tmp = Reader.ReadByte();
+                    }
+                    Names[i] = Encoding.GetEncoding(name_coding).GetString(strArr.ToArray());
+                    int ID = 1;
+                    for(int j = 0; j < i; j++)
+                    {
+                        if (Names[j] == Names[i]) ID++;
+                    }
+                    if (ID > 1)
+                        Names[i] += "."+ID.ToString();
+                }
+                Reader.Seek(Off, SeekOrigin.Begin);
+            }
+            else
+            {
+                for (uint i = 0; i < Names.Length; i++)
+                {
+                    Names[i] = i.ToString("X8");
+                }
+            }
+            //写入文件
+            Entry out_file_info;
+            for (uint i = 0; i < pak_header.FileCount; i++)
+            {
+ 
+                out_file_info.Offset = (uint)(bw.BaseStream.Position / pak_header.BlockSize);
+                out_file_info.Content = File.Open(in_dir + Names[i], FileMode.Open);
+                out_file_info.Length = (uint)out_file_info.Content.Length;
+                
+                out_file_info.Content.CopyTo(bw.BaseStream);
+                save_pos = bw.BaseStream.Position;
+                bw.Seek((int)Reader.BaseStream.Position, SeekOrigin.Begin);
+                bw.Write(BitConverter.GetBytes(out_file_info.Offset));
+                bw.Write(BitConverter.GetBytes(out_file_info.Length));
+
+                if (save_pos % pak_header.BlockSize != 0)
+                {
+                    bw.Seek((int)(save_pos + pak_header.BlockSize - (save_pos % pak_header.BlockSize) - 1), SeekOrigin.Begin);
+                    bw.Write((byte)0x00);//使seek部分填充
+                }
+                Reader.Seek(0x08, SeekOrigin.Current);
+                Console.WriteLine("{0:X} {1} {2}", out_file_info.Offset, Names[i], out_file_info.Length);
+                //AppendArray(ref Files, File);
+            }
+            bw.Close();
+            Reader.Close();
+            header.Close();
+        }
         public static void Unpack(string file,string name_coding = "UTF-8")
         {
             string OutDir = file + "_unpacked\\";
             Stream Packget = new StreamReader(file).BaseStream;
             uint header_len;
-            var Files = PAKManager.Unpack(Packget, out header_len, name_coding);
+            var Files = Unpack(Packget, out header_len, name_coding);
             FileStream fs = new FileStream(file + ".pakhead", FileMode.Create);
             Packget.Seek(0, SeekOrigin.Begin);
             byte[] head = new byte[header_len];
@@ -100,7 +187,6 @@ namespace ProtPak
 
                 AppendArray(ref Files, File);
             }
-
             return Files;
         }
 
