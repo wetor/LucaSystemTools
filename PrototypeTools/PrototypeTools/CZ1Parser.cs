@@ -12,16 +12,11 @@ namespace ProtImage
 {
     public class CZ1Parser
     {
-        byte[] Texture;
-        public CZ1Parser(byte[] Texture)
-        {
-            this.Texture = Texture;
-        }
-        public CZ1Parser() { }
+ 
 
         //作者：DeQxJ00
         //时间：2019.1.17
-        public static string Decompress(List<int> compressed)
+        private string Decompress(List<int> compressed)
         {
             // build the dictionary
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
@@ -54,7 +49,7 @@ namespace ProtImage
 
         //作者：DeQxJ00
         //时间：2019.1.17
-        public IEnumerable<byte> Decompress(StructReader Reader)
+        private IEnumerable<byte> Decompress(StructReader Reader)
         {
             List<byte> output = new List<byte>();
             uint fileCount = Reader.ReadUInt32();
@@ -90,8 +85,9 @@ namespace ProtImage
         }
         //作者：DeQxJ00
         //时间：2019.1.17
-        public Bitmap Import()
+        private Bitmap Export(byte[] Texture)
         {
+            
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ1Header Header = new CZ1Header();
             Reader.ReadStruct(ref Header);
@@ -195,7 +191,7 @@ namespace ProtImage
         }
         //作者：Wetor
         //时间：2019.1.18
-        public static List<int> Compress(string uncompressed)
+        private List<int> Compress(string uncompressed)
         {
             // build the dictionary
             Dictionary<string, int> dictionary = new Dictionary<string, int>();
@@ -204,7 +200,6 @@ namespace ProtImage
             dictionary.Add(((char)256).ToString(), 0);
             string w = string.Empty;
             List<int> compressed = new List<int>();
-
             foreach (char c in uncompressed)
             {
                 string wc = w + c;
@@ -221,7 +216,6 @@ namespace ProtImage
                     w = c.ToString();
                 }
             }
-
             // write remaining output if necessary
             if (!string.IsNullOrEmpty(w))
                 compressed.Add(dictionary[w]);
@@ -230,7 +224,7 @@ namespace ProtImage
         }
         //作者：Wetor
         //时间：2019.1.18
-        public static List<int> Compress_1(byte[] uncompressed)
+        private List<int> Compress(byte[] uncompressed)
         {
             // build the dictionary
             // build the dictionary
@@ -267,7 +261,7 @@ namespace ProtImage
         }
         //作者：Wetor
         //时间：2019.1.18
-        public void Export(string outfile)
+        public void PngToCZ1(string outfile)
         {
             Bitmap Picture = new Bitmap(File.Open(outfile, FileMode.Open));
             StructWriter Writer = new StructWriter(File.Open(outfile + ".cz1", FileMode.Create));
@@ -370,6 +364,15 @@ namespace ProtImage
             Writer.Close();
 
 
+        }
+        //作者：Wetor
+        //时间：2019.7.25
+        public void CZ1ToPng(string infile)
+        {
+            BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
+            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
+            texture.Save(infile + ".png", ImageFormat.Png);
+            br.Close();
         }
     }
 

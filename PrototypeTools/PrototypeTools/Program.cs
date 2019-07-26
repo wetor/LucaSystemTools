@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using ProtScript;
 using ProtPak;
+using ProtImage;
 namespace PrototypeTools
 {
     class Program
@@ -13,24 +14,52 @@ namespace PrototypeTools
         static string work = @"E:\汉化项目\switch\SummerPocket\";
         static void Main(string[] args)
         {
-            var files = Directory.GetFiles(work + @"UnpackFile\SCRIPT.PAK~", "*");
+#if false //反编译全部脚本
+            
+            var files = Directory.GetFiles(work + @"UnpackFile\SCRIPT.PAK_unpacked", "*");
+            string[] black = new string[]
+            {
+                "_BUILD_COUNT",
+                "_VARNUM",
+                "_TASK",
+                "_SCR_LABEL",
+                "_CGMODE",
+                "_VOICE_PARAM"
+            };
+            foreach (var file in files)
+            {
+                bool flag = false;
+                if (Path.GetExtension(file) == ".txt") continue;
+                for(int i = 0; i < black.Length; i++)
+                {
+                    if (Path.GetFileName(file) == black[i])
+                    {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) continue;
 
-            //foreach (var file in files)
-            //{
-            //    if (Path.GetExtension(file) == ".txt") continue;
-            //    if (Path.GetFileName(file) == "_CGMODE") continue;
-            //    if (Path.GetFileName(file) == "_VOICE_PARAM") continue;
-            //    Console.WriteLine(file);
-            //    ScriptParser scr = new ScriptParser(file);
-            //    scr.Decompress();
-            //    scr.Close();
-            //}
-            PAKManager.Pack(work + @"OriginFile\FONT.PAK.pakhead");
-            //PAKManager.Unpack(work + @"OriginFile\FONT2.PAK");
-            //ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
-            //scr.DeCompress();
-            //scr.Compress();
-            //scr.Close();
+                Console.WriteLine(file);
+                ScriptParser scr = new ScriptParser(file);
+                scr.DeCompress();
+                scr.Close();
+            }
+#endif
+#if false //反编译单个脚本
+           
+            ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
+            scr.DeCompress();
+            scr.Compress();
+            scr.Close();
+#endif
+            //PAKManager.Pack(work + @"OriginFile\SCRIPT.PAK.pakhead", "Shift-Jis");
+            //PAKManager.Unpack(work + @"OriginFile\SCRIPT.PAK","Shift-Jis");
+            CZ1Parser cz1 = new CZ1Parser();
+            cz1.CZ1ToPng(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png.cz1");
+            //cz1.PngToCZ1(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png");
+
+            Console.WriteLine("ok!");
             Console.ReadKey();
 
         }

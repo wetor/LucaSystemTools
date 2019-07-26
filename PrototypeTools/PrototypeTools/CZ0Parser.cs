@@ -8,6 +8,9 @@ using System.Text;
 
 namespace ProtImage
 {
+    //作者：marcussacana
+    //时间：2018.1
+    //https://github.com/marcussacana/LucaSystem
     public class CZ0Parser
     {
         byte[] Texture;

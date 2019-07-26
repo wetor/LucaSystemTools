@@ -9,6 +9,10 @@ using System.Diagnostics;
 
 namespace ProtPak
 {
+
+    //作者：marcussacana
+    //时间：2018.1
+    //https://github.com/marcussacana/LucaSystem
     public class PAKManager
     {
         //作者：Wetor
@@ -70,10 +74,10 @@ namespace ProtPak
                 }
             }
             //写入文件
-            Entry out_file_info;
+            
             for (uint i = 0; i < pak_header.FileCount; i++)
             {
- 
+                Entry out_file_info;
                 out_file_info.Offset = (uint)(bw.BaseStream.Position / pak_header.BlockSize);
                 out_file_info.Content = File.Open(in_dir + Names[i], FileMode.Open);
                 out_file_info.Length = (uint)out_file_info.Content.Length;
@@ -83,20 +87,25 @@ namespace ProtPak
                 bw.Seek((int)Reader.BaseStream.Position, SeekOrigin.Begin);
                 bw.Write(BitConverter.GetBytes(out_file_info.Offset));
                 bw.Write(BitConverter.GetBytes(out_file_info.Length));
+                bw.Seek((int)save_pos, SeekOrigin.Begin);
+                if (i == pak_header.FileCount - 1) 
+                    while (bw.BaseStream.Position % pak_header.BlockSize != 0)
+                        bw.Write((byte)0x00);
+                else if (save_pos % pak_header.BlockSize != 0)
+                    bw.Seek((int)(pak_header.BlockSize - (save_pos % pak_header.BlockSize)), SeekOrigin.Current);
 
-                if (save_pos % pak_header.BlockSize != 0)
-                {
-                    bw.Seek((int)(save_pos + pak_header.BlockSize - (save_pos % pak_header.BlockSize) - 1), SeekOrigin.Begin);
-                    bw.Write((byte)0x00);//使seek部分填充
-                }
+                
                 Reader.Seek(0x08, SeekOrigin.Current);
                 Console.WriteLine("{0:X} {1} {2}", out_file_info.Offset, Names[i], out_file_info.Length);
                 //AppendArray(ref Files, File);
             }
+            
             bw.Close();
             Reader.Close();
             header.Close();
         }
+        //作者：Wetor
+        //时间：2019.7.25
         public static void Unpack(string file,string name_coding = "UTF-8")
         {
             string OutDir = file + "_unpacked\\";
