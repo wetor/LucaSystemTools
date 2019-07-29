@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="CZ0Parser.cs" />
     <Compile Include="CZ1Parser.cs" />
+    <Compile Include="CZ3Parser.cs" />
     <Compile Include="FontParser.cs" />
     <Compile Include="LZW.cs" />
     <Compile Include="PakTools.cs" />

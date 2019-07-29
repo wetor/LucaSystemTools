@@ -54,11 +54,14 @@ namespace PrototypeTools
             scr.Close();
 #endif
             //PAKManager.Pack(work + @"OriginFile\SCRIPT.PAK.pakhead", "Shift-Jis");
-            //PAKManager.Unpack(work + @"OriginFile\SCRIPT.PAK","Shift-Jis");
-            CZ1Parser cz1 = new CZ1Parser();
-            cz1.CZ1ToPng(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png.cz1");
+            //PAKManager.Unpack(work + @"OriginFile\SYSCG.PAK","UTF-8");
+            //CZ1Parser cz1 = new CZ1Parser();
+            //cz1.CZ1ToPng(work + @"OriginFile\SYSCG.PAK_unpacked\CGM_NAME06");
             //cz1.PngToCZ1(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png");
-
+            //CGM_SELECT
+            //Console.WriteLine("{0}",(byte)((byte)0x50+(byte)0xff)));
+            CZ3Parser cz3 = new CZ3Parser();
+            cz3.CZ3ToPng(work + @"Temp\CGM_SELECT");
             Console.WriteLine("ok!");
             Console.ReadKey();
 
