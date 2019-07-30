@@ -97,7 +97,6 @@ namespace ProtImage
 
             Reader.Seek(Header.HeaderLength, SeekOrigin.Begin);
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
-            Console.WriteLine("{0} {1}", Header.Colorbits, Header.HeaderLength);
             if (Header.Colorbits == 4)//4bit
             {
                 

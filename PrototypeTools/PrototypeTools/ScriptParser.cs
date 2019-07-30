@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using AdvancedBinary;
+using PrototypeTools;
 
 namespace ProtScript
 {
@@ -36,6 +37,7 @@ namespace ProtScript
 
         public ScriptParser(string file,bool debug = false)
         {
+            InitDic("CL");
             //Console.WriteLine(Byte2Hex(CompressCode("    MESSAGE [03] (88) (4) (2) p\"`船内アナウンス@「まもなく鳥白島、鳥白町漁港に到着します」\" [0000] [0B]"), true));
             //Console.ReadKey();
             this.debug = debug;
@@ -257,6 +259,7 @@ namespace ProtScript
                 }
 
                 retn += tmp + ((i != values.Length - 1 || end_flag) ? " " : "");
+                retn = retn.Replace("\n", @"{\n}");
                 if (end_flag) break;
 
             }
@@ -755,6 +758,25 @@ namespace ProtScript
             {"MAPSELECT"                  ,0x77},
             {"UNKNOWN"                    ,0x78}
         };
+
+        private void InitDic(string game) //SP CL
+        {
+
+            string[] dic = new string[0];
+            if (game == "CL")
+                dic = GameCode.CL.Split('\n');
+            else if (game == "SP")
+                dic = GameCode.SP.Split('\n');
+            else
+                throw new Exception("未找到指定游戏");
+            decompress_dic.Clear();
+            compress_dic.Clear();
+            for (int i = 0; i < dic.Length; i++)
+            {
+                decompress_dic.Add((byte)i, dic[i].Replace("\r", ""));
+                compress_dic.Add( dic[i].Replace("\r", ""), (byte)i);
+            }
+        }
         private byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
         {
             hexString = hexString.Replace(" ", "");
