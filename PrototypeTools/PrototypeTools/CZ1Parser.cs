@@ -10,6 +10,7 @@ using PbvCompressor;
 
 namespace ProtImage
 {
+    //注：部分代码有参考现存代码，来源忘了 2020.5.24
     public class CZ1Parser
     {
  

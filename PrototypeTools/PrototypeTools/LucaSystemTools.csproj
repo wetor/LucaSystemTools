@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{E8893CB9-32BB-46F6-B0EF-6FA497C6ADA8}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>PrototypeTools</RootNamespace>
-    <AssemblyName>PrototypeTools</AssemblyName>
+    <RootNamespace>LucaSystem</RootNamespace>
+    <AssemblyName>LucaSystem</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

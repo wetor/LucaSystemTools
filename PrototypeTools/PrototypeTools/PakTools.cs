@@ -10,7 +10,7 @@ using System.Diagnostics;
 namespace ProtPak
 {
 
-    //作者：marcussacana
+    //原作者：marcussacana
     //时间：2018.1
     //https://github.com/marcussacana/LucaSystem
     public class PAKManager

@@ -8,7 +8,8 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace PrototypeTools {
+namespace LucaSystemTools
+{
     using System;
     
     
@@ -39,7 +40,7 @@ namespace PrototypeTools {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PrototypeTools.GameCode", typeof(GameCode).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("LucaSystem.GameCode", typeof(GameCode).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

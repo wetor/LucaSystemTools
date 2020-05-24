@@ -7,17 +7,22 @@ using System.IO;
 using ProtScript;
 using ProtPak;
 using ProtImage;
-namespace PrototypeTools
+namespace LucaSystemTools
 {
+    /**
+     * 此项目未完工，大概率已坑
+     * 
+     * 
+     */
     class Program
     {
-        static string work = @"F:\NX\Clannad\Extracted_NCA\romfs\";
+        static string work = @"C:\Users\29293\Desktop\Prototype\";
         static void Main(string[] args)
         {
-#if true //反编译全部脚本
+#if false //反编译全部脚本
             
             var files = Directory.GetFiles(work + @"SCRIPT.PAK_unpacked", "*");
-            string[] black = new string[]
+            string[] black_list = new string[] // 跳过的脚本文件
             {
                 "_BUILD_COUNT",
                 "_VARNUM",
@@ -30,7 +35,7 @@ namespace PrototypeTools
             {
                 bool flag = false;
                 if (Path.GetExtension(file) == ".txt") continue;
-                for(int i = 0; i < black.Length; i++)
+                for(int i = 0; i < black_list.Length; i++)
                 {
                     if (Path.GetFileName(file) == black[i])
                     {
@@ -46,15 +51,15 @@ namespace PrototypeTools
                 scr.Close();
             }
 #endif
-#if false //反编译单个脚本
+#if true //反编译单个脚本
            
-            ScriptParser scr = new ScriptParser(work + @"Temp\10_プロローグ0725", true);
+            ScriptParser scr = new ScriptParser(work + @"SCRIPT.PAK_unpacked\10_プロローグ0725", true);
             scr.DeCompress();
-            scr.Compress();
+            //scr.Compress();
             scr.Close();
 #endif
             //PAKManager.Pack(work + @"OriginFile\SCRIPT.PAK.pakhead", "Shift-Jis");
-            //PAKManager.Unpack(work + @"SCRIPT.PAK", "UTF-8");
+            //PAKManager.Unpack(work + @"SCRIPT.PAK", "Shift-Jis");
             //CZ1Parser cz1 = new CZ1Parser();
             //cz1.CZ1ToPng(work + @"OriginFile\SYSCG.PAK_unpacked\CGM_NAME06");
             //cz1.PngToCZ1(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png");

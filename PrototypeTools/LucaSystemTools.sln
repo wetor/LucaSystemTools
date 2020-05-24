@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29025.244
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrototypeTools", "PrototypeTools\PrototypeTools.csproj", "{E8893CB9-32BB-46F6-B0EF-6FA497C6ADA8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LucaSystemTools", "PrototypeTools\LucaSystemTools.csproj", "{E8893CB9-32BB-46F6-B0EF-6FA497C6ADA8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.IO;
 using AdvancedBinary;
-using PrototypeTools;
+using LucaSystemTools;
 
 namespace ProtScript
 {
@@ -37,9 +37,8 @@ namespace ProtScript
 
         public ScriptParser(string file,bool debug = false)
         {
-            InitDic("CL");
-            //Console.WriteLine(Byte2Hex(CompressCode("    MESSAGE [03] (88) (4) (2) p\"`船内アナウンス@「まもなく鳥白島、鳥白町漁港に到着します」\" [0000] [0B]"), true));
-            //Console.ReadKey();
+            InitDic("SP");
+
             this.debug = debug;
             path = file;
             fs = new FileStream(path, FileMode.Open);
@@ -285,7 +284,7 @@ namespace ProtScript
             else
             {
                 string flag = decompress_dic[scr_index];
-                byte flag2 = mbr.ReadByte();
+                byte args = mbr.ReadByte();
                 switch (flag)
                 {
                     case "MESSAGE":
@@ -304,7 +303,7 @@ namespace ProtScript
                         retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
                         break;
                     case "TASK":
-                        if (flag2 == 0x03)
+                        if (args == 0x03)
                         {
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
                             UInt16 tmp = mbr.ReadUInt16();
@@ -314,9 +313,9 @@ namespace ProtScript
                         }
                         break;
                     case "FARCALL":
-                        if (flag2 == 0x00)
+                        if (args == 0x00)
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16,  Type.Byte,  Type.StringSJIS, Type.UInt16, Type.UInt16);
-                        if (flag2 == 0x01)
+                        if (args == 0x01)
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS, Type.UInt16, Type.UInt16);
                         break;
                     case "JUMP":
@@ -329,12 +328,20 @@ namespace ProtScript
                         retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS);
                         break;
                     case "GOTO":
-                        if (flag2 == 0x00)
+                        if (args == 0x00)
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
-                        if (flag2 == 0x01)
+                        if (args == 0x01)
                             retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt32);
                         break;
+                    case "END":
+                        break;
                     default:
+                        if (args == 0x01)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16);
+                        if (args == 0x02)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
+                        if (args == 0x03)
+                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
                         break;
 
                 }
@@ -346,7 +353,7 @@ namespace ProtScript
                 {
                     retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
                 }
-                retn = flag + " " + "[" + Byte2Hex(flag2) + "]" + retn;
+                retn = flag + " " + "[" + Byte2Hex(args) + "]" + retn;
 #if false
                 switch (flag)
                 {
@@ -509,6 +516,7 @@ namespace ProtScript
 
             fs.Close();
         }
+        // 默认是SP的
         private Dictionary<byte, string> decompress_dic = new Dictionary<byte, string>
         {
             {0x00,"EQU"                           },
@@ -633,7 +641,7 @@ namespace ProtScript
             {0x77,"MAPSELECT"                     },
             {0x78,"UNKNOWN"                       }
         };
-
+        // 默认是SP的
         private Dictionary<string , byte> compress_dic = new Dictionary< string, byte>
         {
             {"EQU"                        ,0x00},
