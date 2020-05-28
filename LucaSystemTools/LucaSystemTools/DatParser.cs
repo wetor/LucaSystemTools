@@ -67,14 +67,14 @@ namespace ProtImage
                 for (int j = 0; j < ColorPanel.Length; j++)
                 {
                     //TODO 颜色表的 颜色还有错误
-                    tmpPixel.R = Reader.ReadByte();
-                    tmpPixel.G = Reader.ReadByte();
-                    tmpPixel.B = Reader.ReadByte();
-                    tmpPixel.A = Reader.ReadByte();
-                    tmpPixel.R = (byte)(tmpPixel.R == 0 ? 0xFF : tmpPixel.R);
-                    tmpPixel.G = (byte)(tmpPixel.G == 0 ? 0xFF : tmpPixel.G);
-                    tmpPixel.B = (byte)(tmpPixel.B == 0 ? 0xFF : tmpPixel.B);
-                    tmpPixel.A = (byte)(tmpPixel.A == 0 ? 0xFF : tmpPixel.A);
+                    tmpPixel.R = (byte)(Reader.ReadByte());
+                    tmpPixel.G = (byte)(Reader.ReadByte());
+                    tmpPixel.B = (byte)(Reader.ReadByte());
+                    tmpPixel.A = (byte)(Reader.ReadByte());
+                    //tmpPixel.R = (byte)(tmpPixel.R == 0 ? 0xFF : tmpPixel.R);
+                    //tmpPixel.G = (byte)(tmpPixel.G == 0 ? 0xFF : tmpPixel.G);
+                    //tmpPixel.B = (byte)(tmpPixel.B == 0 ? 0xFF : tmpPixel.B);
+                    //tmpPixel.A = (byte)(tmpPixel.A == 0 ? 0xFF : tmpPixel.A);
                     ColorPanel[j] = tmpPixel;
                 }
 
@@ -96,28 +96,15 @@ namespace ProtImage
             List<byte> output = new List<byte>();
             Dictionary<int, uint> rawSizeList = new Dictionary<int, uint>();
             Dictionary<int, uint> compressedSizeList = new Dictionary<int, uint>();
-            List<uint> color_line = new List<uint>();
             int i;
-            float sum = 0;
-            uint sum2 = 0;
             for (i = 0; i < BlockCount; i++)
             {
                 uint fileCompressedSize = Reader.ReadUInt32();
                 uint fileRawSize = Reader.ReadUInt32();
                 rawSizeList.Add(i, fileRawSize);
                 compressedSizeList.Add(i, fileCompressedSize);
-                color_line.Add((uint)Math.Ceiling(sum));
-                uint pre_sum = (uint)Math.Ceiling(sum);
-                sum += (float)fileRawSize / (float)Header.Width / (float)PixivBytes;
-                uint a = (uint)Math.Ceiling(sum) - pre_sum;
-                sum2 += (uint)(a * Header.Width * PixivBytes);
-                Console.WriteLine("{0} {1} {2}  {3} {4}", a * Header.Width * PixivBytes, fileRawSize, a, sum2, sum);
-
             }
-            color_line.Add((uint)Math.Ceiling(sum));
-            Console.WriteLine("{0} {1} {2}", (uint)Math.Ceiling(sum), sum2, Header.Width * Header.Heigth * 3);
 
-            //List<byte> nextBytes = new List<byte>();
             for (i = 0; i < BlockCount; i++)
             {
                 List<int> lmzBytes = new List<int>();
@@ -178,7 +165,7 @@ namespace ProtImage
             MemoryStream ms = new MemoryStream(output.ToArray());
             byte[] bytArray4Count = new byte[4];
             ms.Seek(0, SeekOrigin.Begin);
-            if (PixivBytes==4)//32
+            if (PixivBytes==4)//32 argb
             {
                 Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
                 for (int y = 0; y < Header.Heigth; y++)
@@ -187,12 +174,12 @@ namespace ProtImage
 
                         ms.Read(bytArray4Count, 0, 4); //
 
-                        Pixel.R = bytArray4Count[0] == 0 ? (byte)0xFF : bytArray4Count[0];
-                        Pixel.G = bytArray4Count[1] == 0 ? (byte)0xFF : bytArray4Count[1];
-                        Pixel.B = bytArray4Count[2] == 0 ? (byte)0xFF : bytArray4Count[2];
-                        Pixel.A = bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3];
+                        Pixel.R = --bytArray4Count[0];// == 0 ? (byte)0xFF : bytArray4Count[0];
+                        Pixel.G = --bytArray4Count[1];// == 0 ? (byte)0xFF : bytArray4Count[1];
+                        Pixel.B = --bytArray4Count[2];// == 0 ? (byte)0xFF : bytArray4Count[2];
+                        Pixel.A = --bytArray4Count[3];// == 0 ? (byte)0xFF : bytArray4Count[3];
 
-                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
                     }
             }
 
@@ -205,9 +192,9 @@ namespace ProtImage
 
                         ms.Read(bytArray4Count, 0, 3); //
 
-                        Pixel.R = bytArray4Count[0] == 0 ? (byte)0xFF : bytArray4Count[0];
-                        Pixel.G = bytArray4Count[1] == 0 ? (byte)0xFF : bytArray4Count[1];
-                        Pixel.B = bytArray4Count[2] == 0 ? (byte)0xFF : bytArray4Count[2];
+                        Pixel.R = --bytArray4Count[0];// == 0 ? (byte)0xFF : bytArray4Count[0];
+                        Pixel.G = --bytArray4Count[1];// == 0 ? (byte)0xFF : bytArray4Count[1];
+                        Pixel.B = --bytArray4Count[2];// == 0 ? (byte)0xFF : bytArray4Count[2];
                         //Pixel.A = bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3];
 
                         Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
@@ -220,7 +207,7 @@ namespace ProtImage
                 for (int y = 0; y < Header.Heigth; y++)
                 for (int x = 0; x < Header.Width; x++)
                 {
-                    byte b = (byte)ms.ReadByte(); //
+                    byte b = (byte)(ms.ReadByte()-1); //
                     Pixel.R = ColorPanel[b].R;
                     Pixel.G = ColorPanel[b].G;
                     Pixel.B = ColorPanel[b].B;
