@@ -6,50 +6,14 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using PbvCompressor;
+using LucaSystem;
 
 namespace ProtImage
 {
     //注：部分代码有参考现存代码，来源忘了 2020.5.24
-    public class CZ3Parser
+    public class CZ3Parser:AbstractFileParser
     {
 
-
-        //作者：DeQxJ00
-        //时间：2019.1.17
-        private string Decompress(List<int> compressed)
-        {
-            // build the dictionary
-            Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256; i++)
-                dictionary.Add(i, ((char)i).ToString());
-
-            string w = dictionary[0];
-            //compressed.RemoveAt(0);
-            StringBuilder decompressed = new StringBuilder();
-
-            foreach (int k in compressed)
-            {
-                string entry = null;
-                if (dictionary.ContainsKey(k))
-                    entry = dictionary[k];
-                else if (k == dictionary.Count)
-                    entry = w + w[0];
-
-                decompressed.Append(entry);
-
-                // new sequence; add it to the dictionary
-
-                dictionary.Add(dictionary.Count, w + entry[0]);
-
-                w = entry;
-            }
-
-            return decompressed.ToString();
-        }
-
-        //作者：DeQxJ00
-        //时间：2019.1.17
         private IEnumerable<byte> Decompress(StructReader Reader)
         {
             List<byte> output = new List<byte>();
@@ -76,7 +40,7 @@ namespace ProtImage
                 //解压lzw
                 /*byte[] re = unlzw(lmzBytes.ToArray());
                 output.AddRange(re);*/
-                string str = Decompress(lmzBytes);
+                string str = LzwUtil.Decompress(lmzBytes);
                 foreach (var c in str)
                 {
                     output.Add((byte)c);
@@ -84,8 +48,7 @@ namespace ProtImage
             }
             return output;
         }
-        //作者：DeQxJ00
-        //时间：2019.1.17
+   
         private Bitmap Export(byte[] Texture)
         {
 
@@ -139,76 +102,7 @@ namespace ProtImage
             Reader.Close();
             return Picture;
         }
-        //作者：Wetor
-        //时间：2019.1.18
-        private List<int> Compress(string uncompressed)
-        {
-            // build the dictionary
-            Dictionary<string, int> dictionary = new Dictionary<string, int>();
-            for (int i = 0; i < 256; i++)
-                dictionary.Add(((char)i).ToString(), i);
-            dictionary.Add(((char)256).ToString(), 0);
-            string w = string.Empty;
-            List<int> compressed = new List<int>();
-            foreach (char c in uncompressed)
-            {
-                string wc = w + c;
-                if (dictionary.ContainsKey(wc))
-                {
-                    w = wc;
-                }
-                else
-                {
-                    // write w to output
-                    compressed.Add(dictionary[w]);
-                    // wc is a new sequence; add it to the dictionary
-                    dictionary.Add(wc, dictionary.Count);
-                    w = c.ToString();
-                }
-            }
-            // write remaining output if necessary
-            if (!string.IsNullOrEmpty(w))
-                compressed.Add(dictionary[w]);
-
-            return compressed;
-        }
-        //作者：Wetor
-        //时间：2019.1.18
-        private List<int> Compress(byte[] uncompressed)
-        {
-            // build the dictionary
-            // build the dictionary
-            Dictionary<string, int> dictionary = new Dictionary<string, int>();
-
-            for (int i = 0; i < 256; i++)
-                dictionary.Add((i + 256).ToString(), i);
-            string w = string.Empty;
-            List<int> compressed = new List<int>();
-
-            foreach (byte c in uncompressed)
-            {
-
-                string wc = w + (c + 256).ToString();
-                if (dictionary.ContainsKey(wc))
-                {
-                    w = wc;
-                }
-                else
-                {
-                    // write w to output
-                    compressed.Add(dictionary[w]);
-                    // wc is a new sequence; add it to the dictionary
-                    dictionary.Add(wc, dictionary.Count);
-                    w = (c + 256).ToString();
-                }
-            }
-
-            // write remaining output if necessary
-            if (!string.IsNullOrEmpty(w))
-                compressed.Add(dictionary[w]);
-
-            return compressed;
-        }
+     
         //作者：Wetor
         //时间：2019.1.18
         public void PngToCZ3(string outfile)
@@ -266,7 +160,7 @@ namespace ProtImage
                 {
                     decompressed.Append(kk);
                 }
-                listBytes = Compress(decompressed.ToString());
+                listBytes = LzwUtil.Compress(decompressed.ToString());
                 out_list.Add(listBytes.ToArray());
                 Writer.Write(listBytes.Count);
                 //string tmp_str;
@@ -323,6 +217,16 @@ namespace ProtImage
             Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
             texture.Save(infile + ".png", ImageFormat.Png);
             br.Close();
+        }
+
+        public override void FileExport(string name)
+        {
+            CZ3ToPng(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            PngToCZ3(name);
         }
     }
 

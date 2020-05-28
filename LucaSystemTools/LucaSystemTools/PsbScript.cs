@@ -4,21 +4,19 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using LucaSystem;
+using LucaSystemTools;
 
 namespace RealLive
 {
-    public class PsbScript
+    public class PsbScript:AbstractFileParser
     {
-        private string path;
         private FileStream fs;
         private BinaryReader br;
-        private bool debug = false;
-        public PsbScript(string file, bool debug = false)
+     
+        public PsbScript()
         {
-            this.debug = debug;
-            path = file;
-            fs = new FileStream(path, FileMode.Open);
-            br = new BinaryReader(fs);
+   
 
         }
         public void Close()
@@ -30,7 +28,7 @@ namespace RealLive
         {
             return fs.CanRead && fs.Position < fs.Length;
         }
-        public void DeCompress()
+        public void DeCompress(string path)
         {
             fs.Seek(0x10, SeekOrigin.Begin);//head
             fs.Seek(0x400, SeekOrigin.Current);//null
@@ -81,7 +79,7 @@ namespace RealLive
                 }
 
             }
-            if (debug)
+            if (Program.debug)
                 Console.WriteLine("{0}  {1}", fs.Position, (int)len);
             //datas.AddRange(BitConverter.GetBytes(len));
             return datas.ToArray();
@@ -127,7 +125,7 @@ namespace RealLive
                 retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
             }
 
-            if (retn != "    " && retn != "" && !rec && debug)
+            if (retn != "    " && retn != "" && !rec && Program.debug)
             {
                 Console.WriteLine(retn);
             }
@@ -169,6 +167,18 @@ namespace RealLive
         private string Byte2Hex(byte bytes)// 字节数组转16进制字符串
         {
             return bytes.ToString("X2");
+        }
+
+        public override void FileExport(string name)
+        {
+            fs = new FileStream(name, FileMode.Open);
+            br = new BinaryReader(fs);
+            DeCompress(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            //Compress();
         }
     }
 }

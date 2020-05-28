@@ -6,46 +6,13 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using PbvCompressor;
+using LucaSystem;
 
 namespace ProtImage
 {
 
-    public class DatParser
+    public class DatParser:AbstractFileParser
     {
-
-
-
-        public static string Decompress(List<int> compressed)
-        {
-            // build the dictionary
-            Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256 + 1; i++)
-                dictionary.Add(i, ((char)i).ToString());
-
-            string w = dictionary[compressed[0]];
-            compressed.RemoveAt(0);
-            StringBuilder decompressed = new StringBuilder(w);
-
-            foreach (int k in compressed)
-            {
-                string entry = null;
-                if (dictionary.ContainsKey(k))
-                    entry = dictionary[k];
-                else if (k == dictionary.Count)
-                    entry = w + w[0];
-
-                decompressed.Append(entry);
-
-                // new sequence; add it to the dictionary
-                dictionary.Add(dictionary.Count, w + entry[0]);
-
-                w = entry;
-            }
-
-            return decompressed.ToString();
-        }
-
         private Bitmap Export(byte[] Texture)
         {
 
@@ -53,52 +20,98 @@ namespace ProtImage
             DatHeader Header = new DatHeader();
             Reader.ReadStruct(ref Header);
             //Header.Blockh = (ushort)Math.Ceiling((float)Header.Heigth / (float)Header.Colorblock);
-            if (Header.Signature != 2097410) //0x02012000
-                throw new BadImageFormatException();
+            Pixel32[] ColorPanel = new Pixel32[0];
+
+            uint Signature = Header.Signature;
+            int PixivBytes = 4;
+            int DatType = 1;
+
+            if (Signature == 0x00200102)
+            {
+                Console.WriteLine("DatType 1");//no colorpanel //32 or 24bit
+            }
+            else if (Signature == 0x04280102)
+            {
+                Console.WriteLine("DatType 2");//has colorpanel 256色 8bit
+                DatType = 2;
+            }
+            else
+            {
+                //throw new BadImageFormatException();
+            }
+
+            if (Header.ColorbitsType == 0x80)
+            {
+                PixivBytes = 4;
+            }
+            else if (Header.ColorbitsType == 0xA8)
+            {
+                PixivBytes = 3;
+            }
+            else if (Header.ColorbitsType == 0x81)
+            {
+                PixivBytes = 1;
+            }
+
+            if (DatType == 2)
+            {
+                Pixel32 tmpPixel=new Pixel32();
+                ColorPanel = new Pixel32[256];
+                for (int j = 0; j < ColorPanel.Length; j++)
+                {
+                    //TODO 颜色表的 颜色还有错误
+                    tmpPixel.R = Reader.ReadByte();
+                    tmpPixel.G = Reader.ReadByte();
+                    tmpPixel.B = Reader.ReadByte();
+                    tmpPixel.A = Reader.ReadByte();
+                    tmpPixel.R = (byte)(tmpPixel.R == 0 ? 0xFF : tmpPixel.R);
+                    tmpPixel.G = (byte)(tmpPixel.G == 0 ? 0xFF : tmpPixel.G);
+                    tmpPixel.B = (byte)(tmpPixel.B == 0 ? 0xFF : tmpPixel.B);
+                    tmpPixel.A = (byte)(tmpPixel.A == 0 ? 0xFF : tmpPixel.A);
+                    ColorPanel[j] = tmpPixel;
+                }
+
+                //256*4
+                Reader.ReadUInt32(); //10 00 00 00  //16 Unknow
+                Reader.ReadUInt32();   //38 04 00 00  //1080 Unknow
+            }
+            Reader.ReadUInt32();//total len next bytes
+            Reader.ReadUInt32();//w h
+            Reader.ReadUInt16();//unknow ushort
+            int BlockCount = Reader.ReadUInt16();//block count
+
+            uint decompressedLen = Reader.ReadUInt32();
+            Console.WriteLine("decompressedTotalLen :" + decompressedLen);
+            uint compressedLen = Reader.ReadUInt32();
+            Console.WriteLine("compressedTotalLen :" + compressedLen);
 
 
             List<byte> output = new List<byte>();
-
             Dictionary<int, uint> rawSizeList = new Dictionary<int, uint>();
             Dictionary<int, uint> compressedSizeList = new Dictionary<int, uint>();
             List<uint> color_line = new List<uint>();
             int i;
             float sum = 0;
             uint sum2 = 0;
-            if (Header.ColorbitsType == 0x02A80101) //24
-                Header.PixivBytes = 3;
-            else if (Header.ColorbitsType == 0x02800101) //32
-                Header.PixivBytes = 4;
-            for (i = 0; i < Header.FileCount; i++)
+            for (i = 0; i < BlockCount; i++)
             {
-
-                //st.Read(bytArray4Count, 0, 4); //
                 uint fileCompressedSize = Reader.ReadUInt32();
-                //st.Read(bytArray4Count, 0, 4); //
                 uint fileRawSize = Reader.ReadUInt32();
                 rawSizeList.Add(i, fileRawSize);
                 compressedSizeList.Add(i, fileCompressedSize);
-                //int n = (int)Math.Ceiling((float)fileRawSize / (float)Header.Heigth / 4);
-                //Console.WriteLine("{0} {1} {2}", Math.Ceiling(sum), (float)fileRawSize / (float)Header.Heigth / 4, n);
                 color_line.Add((uint)Math.Ceiling(sum));
                 uint pre_sum = (uint)Math.Ceiling(sum);
-
-                sum += (float)fileRawSize / (float)Header.Width / (float)Header.PixivBytes;
+                sum += (float)fileRawSize / (float)Header.Width / (float)PixivBytes;
                 uint a = (uint)Math.Ceiling(sum) - pre_sum;
-                sum2 += (uint)(a * 960 * Header.PixivBytes);
-                Console.WriteLine("{0} {1} {2}  {3} {4}", a * 960 * Header.PixivBytes, fileRawSize, a, sum2, sum);
+                sum2 += (uint)(a * Header.Width * PixivBytes);
+                Console.WriteLine("{0} {1} {2}  {3} {4}", a * Header.Width * PixivBytes, fileRawSize, a, sum2, sum);
 
             }
-            //290880 289141
-            //273600 274891
-            //233280 231527
-
-            //204480 
             color_line.Add((uint)Math.Ceiling(sum));
             Console.WriteLine("{0} {1} {2}", (uint)Math.Ceiling(sum), sum2, Header.Width * Header.Heigth * 3);
 
-            List<byte> nextBytes = new List<byte>();
-            for (i = 0; i < Header.FileCount; i++)
+            //List<byte> nextBytes = new List<byte>();
+            for (i = 0; i < BlockCount; i++)
             {
                 List<int> lmzBytes = new List<int>();
                 List<byte> unBytes = new List<byte>();
@@ -110,37 +123,47 @@ namespace ProtImage
                     lmzBytes.Add(Reader.ReadUInt16());
                 }
                 //解压lzw
-                string str = Decompress(lmzBytes);
-
-
+                string str = LzwUtil2.Decompress(lmzBytes);
                 foreach (var c in str)
                 {
                     unBytes.Add((byte)c);
                 }
-                //处理颜色拆分
-                int pixivNum = unBytes.Count / Header.PixivBytes;
 
-                int lineBytesNum = Header.Width * Header.PixivBytes;
-                byte[] pre_line = new byte[lineBytesNum];
-                byte[] curr_line = new byte[lineBytesNum];
-                for (int idx = 0; idx < Math.Ceiling((double)pixivNum / (double)Header.Width); idx++)
+                //颜色填充方式
+                if (Header.ColorbitsAlgorithm == 0x00)
                 {
-                    unBytes.CopyTo(idx * lineBytesNum, curr_line, 0, (idx + 1) * lineBytesNum < unBytes.Count ? lineBytesNum : unBytes.Count % lineBytesNum);
-                    if (idx != 0)
+                    //raw
+
+                }
+                else if (Header.ColorbitsAlgorithm == 0x02)
+                {
+                    //diff
+                    int pixivNum = unBytes.Count / PixivBytes;
+
+                    int lineBytesNum = Header.Width * PixivBytes;
+                    byte[] pre_line = new byte[lineBytesNum];
+                    byte[] curr_line = new byte[lineBytesNum];
+                    for (int idx = 0; idx < Math.Ceiling((double)pixivNum / (double)Header.Width); idx++)
                     {
-                        for (int x = 0; x < lineBytesNum; x++)
+                        unBytes.CopyTo(idx * lineBytesNum, curr_line, 0, (idx + 1) * lineBytesNum < unBytes.Count ? lineBytesNum : unBytes.Count % lineBytesNum);
+                        if (idx != 0)
                         {
-                            curr_line[x] += pre_line[x];
-                            curr_line[x]--;
+                            for (int x = 0; x < lineBytesNum; x++)
+                            {
+                                curr_line[x] += pre_line[x];
+                                curr_line[x]--;
+                            }
                         }
+                        for (int x = 0; x < lineBytesNum && idx * lineBytesNum + x < unBytes.Count; x++)
+                        {
+                            unBytes[idx * lineBytesNum + x] = curr_line[x];
+                        }
+                        curr_line.CopyTo(pre_line, 0);
                     }
-                    for (int x = 0; x < lineBytesNum && idx * lineBytesNum + x < unBytes.Count; x++)
-                    {
-                        unBytes[idx * lineBytesNum + x] = curr_line[x];
-                    }
-                    curr_line.CopyTo(pre_line, 0);
                 }
                 output.AddRange(unBytes);
+
+
 
             }
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
@@ -148,7 +171,7 @@ namespace ProtImage
             MemoryStream ms = new MemoryStream(output.ToArray());
             byte[] bytArray4Count = new byte[4];
             ms.Seek(0, SeekOrigin.Begin);
-            if (Header.ColorbitsType == 0x00800101 || Header.ColorbitsType == 0x02800101)//32
+            if (PixivBytes==4)//32
             {
                 Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
                 for (int y = 0; y < Header.Heigth; y++)
@@ -166,7 +189,7 @@ namespace ProtImage
                     }
             }
 
-            else if (Header.ColorbitsType == 0x00A80101 || Header.ColorbitsType == 0x02A80101)//24 rgb
+            else if (PixivBytes==3)//24 rgb
             {
                 Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format24bppRgb);
                 for (int y = 0; y < Header.Heigth; y++)
@@ -182,8 +205,24 @@ namespace ProtImage
 
                         Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
                     }
-
             }
+
+            else if (PixivBytes == 1)//8 argb
+            {
+                Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
+                for (int y = 0; y < Header.Heigth; y++)
+                for (int x = 0; x < Header.Width; x++)
+                {
+                    byte b = (byte)ms.ReadByte(); //
+                    Pixel.R = ColorPanel[b].R;
+                    Pixel.G = ColorPanel[b].G;
+                    Pixel.B = ColorPanel[b].B;
+                    Pixel.A = ColorPanel[b].A;
+
+                    Picture.SetPixel(x, y, Color.FromArgb(Pixel.A,Pixel.R, Pixel.G, Pixel.B));
+                }
+            }
+
 
             Reader.Close();
             return Picture;
@@ -198,6 +237,15 @@ namespace ProtImage
             br.Close();
         }
 
+        public override void FileExport(string name)
+        {
+            DatToPng(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 
@@ -207,7 +255,9 @@ namespace ProtImage
         public uint Signature;
         public ushort Width;
         public ushort Heigth;
-        public uint ColorbitsType;
+        public ushort UnKnow;//01 01
+        public byte ColorbitsType;
+        public byte ColorbitsAlgorithm;
         public uint UnKnow2;
         public ushort Width2;
         public ushort Heigth2;
@@ -218,21 +268,7 @@ namespace ProtImage
         public uint UnKnow4;// 00 00 00 00
         public uint UnKnow5;// 10 00 00 00
         public uint UnKnow6;// 30 00 00 00
-        public uint UnKnow7;//total len next bytes
 
-        public ushort Width4;
-        public ushort Heigth4;
-
-        public ushort UnKnow8;
-        public ushort FileCount;//block count
-        public uint DecompressedLength;
-        public uint CompressedLength;
-
-        [Ignore]
-        public ushort Blockh;
-        [Ignore]
-        public int PixivBytes;
-        //dynamic length
     }
 
 
