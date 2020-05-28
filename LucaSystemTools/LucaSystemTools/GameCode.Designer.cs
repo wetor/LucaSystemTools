@@ -8,8 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ProtScript
-{
+namespace LucaSystem {
     using System;
     
     
@@ -133,7 +132,79 @@ namespace ProtScript
         }
         
         /// <summary>
-        ///   查找类似 111 的本地化字符串。
+        ///   查找类似 EQU
+        ///EQUN
+        ///EQUV
+        ///ADD
+        ///SUB
+        ///RANDOM
+        ///VARSTR
+        ///SET
+        ///GOTO
+        ///ONGOTO
+        ///GOSUB
+        ///IFY
+        ///IFN
+        ///RETURN
+        ///JUMP
+        ///FARCALL
+        ///FARRETURN
+        ///END
+        ///VARSTR_SET
+        ///TALKNAME_SET
+        ///ARFLAGSET
+        ///COLORBG_SET
+        ///SPLINE_SET
+        ///QUAKE_SET
+        ///MESSAGE
+        ///MESSAGE_CLEAR
+        ///SELECT
+        ///CLOSE_WINDOW
+        ///LOG
+        ///LOG_PAUSE
+        ///LOG_END
+        ///WAIT_COUNT
+        ///WAIT_TIME
+        ///FFSTOP
+        ///INIT
+        ///STOP
+        ///IMAGELOAD
+        ///ARC
+        ///MOVE
+        ///MOVE2
+        ///ROT
+        ///PEND
+        ///FADE
+        ///SCALE
+        ///SHAKE
+        ///QUAKE
+        ///BASE
+        ///MCMOVE
+        ///MCARC
+        ///MCROT
+        ///MCSHAKE
+        ///MCFADE
+        ///WAIT
+        ///DRAW
+        ///WIPE
+        ///FRAMEON
+        ///FRAMEOFF
+        ///FW
+        ///CLIP
+        ///DELAY
+        ///RASTER
+        ///TONE
+        ///SCALECOSSIN
+        ///BMODE
+        ///SIZE
+        ///SPLINE
+        ///DISP
+        ///SG_QUAKE
+        ///PLAYMUSIC
+        ///PLAYMUSIC_WAITSTART
+        ///PLAYSE
+        ///STOPSE
+        ///V [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
         internal static string ISLAND {
             get {

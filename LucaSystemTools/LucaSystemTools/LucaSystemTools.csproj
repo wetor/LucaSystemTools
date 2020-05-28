@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CL.txt" />
+    <Content Include="ISLAND.txt" />
     <Content Include="SP.txt" />
   </ItemGroup>
   <ItemGroup>

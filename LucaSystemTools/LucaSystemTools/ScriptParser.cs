@@ -13,6 +13,7 @@ using System.Text;
 using System.IO;
 using AdvancedBinary;
 using LucaSystemTools;
+using LucaSystem;
 
 namespace ProtScript
 {
@@ -39,13 +40,420 @@ namespace ProtScript
 
         public ScriptParser(string file,bool debug = false)
         {
-            InitDic("SP");
+            InitDic("ISLAND");
 
             this.debug = debug;
             path = file;
             fs = new FileStream(path, FileMode.Open);
             br = new BinaryReader(fs);
 
+        }
+        public void DeCompressISLAND2()
+        {
+            if (!CanRead()) return;
+
+            FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
+            StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
+            int index = 0;
+            while (fs.Position < fs.Length)
+            {
+               
+                //tsw.WriteLine(Byte2Hex(tmp, true));
+                tsw.WriteLine(DeCompressCodeISLAND(ref index));
+            }
+            tsw.Close();
+            tfs.Close();
+        }
+        private byte[] ReadCodeBytesISLAND()
+        {
+            //[0x00 / null] [len:UInt16] [bytes]
+            //              |<-     len      ->|
+            if (!CanRead()) return new byte[0];
+            List<byte> datas = new List<byte>();
+            byte tmp;
+            while (true)
+            {
+                if (!CanRead())
+                    break;
+                tmp = br.ReadByte();
+                datas.Add(tmp);
+                if (tmp == 0x00) //0x00 xx
+                {
+                    byte tmp2 = br.ReadByte();
+                    if (tmp2 == 0x02 || tmp2 ==0x05 || tmp2 == 0xFF)
+                    {                        
+                        datas.Add(tmp2);
+                        break;
+                    }else
+                        fs.Seek(-1, SeekOrigin.Current);
+                }
+                if (tmp == 0xFF) //0xFF 00
+                {
+                    byte tmp2 = br.ReadByte();
+                    if (tmp2 == 0x00)
+                    {
+                        datas.Add(tmp2);
+                        break;
+                    }
+                    else
+                        fs.Seek(-1, SeekOrigin.Current);
+                }
+                if (tmp == 0x01 ) //0x xx 00
+                {
+                    byte tmp2 = br.ReadByte();
+                    if (tmp2 == 0x00 && !(datas[0]==0x18 && datas.Count<=6))
+                    {
+                        datas.Add(tmp2);
+                        break;
+                    }
+                    else
+                        fs.Seek(-1, SeekOrigin.Current);
+                }
+            }
+            if (CanRead())
+            {
+                tmp = br.ReadByte();
+                while (tmp == 0xFF || tmp == 0x00)
+                {
+                    datas.Add(tmp);
+                    tmp = br.ReadByte();
+                }
+                fs.Seek(-1, SeekOrigin.Current);
+            }
+            
+            if (debug)
+                Console.WriteLine("{0}  {1}", fs.Position, datas.Count);
+            //datas.AddRange(BitConverter.GetBytes(len));
+            return datas.ToArray();
+        }
+        private string DeCompressCodeISLAND(ref int index)
+        {
+            string retn = "";
+            int end = -1;
+            int ch = 0;//读取字符串临时变量
+            List<byte> datas = new List<byte>();
+            byte scr_index = br.ReadByte();
+            if (!decompress_dic.ContainsKey(scr_index))
+            {
+                return "[" + Byte2Hex(scr_index) + "]"; ;
+            }
+            else
+            {
+                string flag = decompress_dic[scr_index];
+                
+                switch (flag)
+                {
+                    case "MESSAGE":
+                        datas.Clear();
+                        br.ReadBytes(2);//序号01，从XX XX 80开始递增
+                        if (br.ReadByte() < 0x80)
+                        {
+                            fs.Seek(-2, SeekOrigin.Current);
+                            break;
+                        }
+                        ushort text_index = br.ReadUInt16();//文本序号
+                        if (text_index != index)
+                        {
+                            throw new Exception("index不匹配！true_idx:" + index + "  idx:" + text_index + "  pos:" + fs.Position);
+                        }
+                        ushort voice_index = br.ReadUInt16();//序号02，可能是语音序号
+                        retn += "(" + text_index + ") (" + voice_index + ")";
+                       
+                        while (true)
+                        {
+                            end = br.ReadUInt16();
+                            if (end == 0x0500 || end == 0x0400 || end == 0x0300 || end == 0x0200 || end == 0x0100)
+                                break; 
+                            else
+                                fs.Seek(-2, SeekOrigin.Current);
+                            datas.Add(br.ReadByte());
+                        }
+                        string str_line = Encoding.GetEncoding("Shift-JIS").GetString(datas.ToArray());
+                        retn += " \"" + str_line + "\"";
+                        index++;
+                        break;
+                    case "IFN":
+                        byte ifn_type = br.ReadByte();
+                        retn += "[" + Byte2Hex(ifn_type) + "]";
+                        if (ifn_type == 0)
+                        {
+                            retn += " [" + Byte2Hex(br.ReadBytes(4)) + "]";
+                        }
+                        else
+                        {
+                            retn += " (" + br.ReadUInt16() + ")";
+                            retn += " \"";
+                            ch = br.ReadChar();
+                            while (ch != 0)
+                            {
+                                retn += (char)ch;
+                                ch = br.ReadChar();
+                            }
+                            retn += "\" {" + br.ReadUInt32() + "}";
+                            retn += " [" + Byte2Hex(br.ReadBytes(2)) + "]";
+                        }
+                        
+                        break;
+                    case "JUMP":
+                        byte jump_type = br.ReadByte();
+                        retn += "[" + Byte2Hex(jump_type) + "]";
+                        if(jump_type == 3)
+                        {
+                            retn += " "+Byte2Hex(br.ReadBytes(4), true);
+                        }
+                        else if(jump_type == 0xC)
+                        {
+                            retn += " " + Byte2Hex(br.ReadBytes(2), true);
+                        }
+                        else
+                        {
+                            ushort jump = br.ReadUInt16();
+                            retn += " (" + jump + ")";
+                            if (jump != 0)
+                            {
+                                retn += " \"";
+                                ch = br.ReadChar();
+                                while (ch != 0)
+                                {
+                                    retn += (char)ch;
+                                    ch = br.ReadChar();
+                                }
+                                retn += "\" " + Byte2Hex(br.ReadBytes(4), true);
+                            }
+                            else
+                            {
+                                retn += " "+Byte2Hex(br.ReadBytes(2), true);
+                            }
+                        }
+                        break;
+                    case "GOTO":
+                        byte goto_type = br.ReadByte();
+                        if (goto_type == 0xC)
+                        {
+                            retn += Byte2Hex(br.ReadBytes(2), true);
+                        }
+                        else
+                        {
+                            retn += Byte2Hex(br.ReadBytes(7), true);
+                        }
+                        
+                        break;
+                    case "MANPU":
+                        retn += Byte2Hex(br.ReadBytes(5+8+3), true);
+                        break;
+                    case "VOLUME":
+                        retn += Byte2Hex(br.ReadBytes(7), true);
+                        break;
+                    case "FADE":
+                        retn += Byte2Hex(br.ReadBytes(7), true);
+                        break;
+                    case "EQUV":
+                        retn += Byte2Hex(br.ReadBytes(7), true);
+                        break;
+                    case "EQU":
+                        break;
+                    case "LOG_END":
+                        retn += Byte2Hex(br.ReadBytes(1), true);
+                        break;
+                    case "PLAYMUSIC":
+                        retn += Byte2Hex(br.ReadBytes(7), true);
+                        break;
+                    case "PLAYSE":
+                        retn += Byte2Hex(br.ReadBytes(5), true);
+                        break;
+                    case "ARFLAGSET":
+                        retn += Byte2Hex(br.ReadBytes(1), true);
+                        break;
+                    case "SUB":
+                        retn += Byte2Hex(br.ReadBytes(2), true);
+                        break;
+                    case "WAIT":
+                        retn += Byte2Hex(br.ReadBytes(7), true);
+                        break;
+                    case "INIT":
+                        retn += Byte2Hex(br.ReadBytes(5), true);
+                        break;
+                    case "CLOSE_WINDOW":
+                        retn += Byte2Hex(br.ReadBytes(3), true);
+                        break;
+                    case "IMAGELOAD":
+                        retn += Byte2Hex(br.ReadBytes(11), true);
+                        break;
+                    default:
+                        datas.Clear();
+                        while (true)
+                        {
+                            
+                            end = br.ReadUInt16();
+                            if (end == 0xFF00 || end == 0x00FF || end == 0xFFFF || end == 0x0000 || end ==0xFF01 || end == 0x0014)
+                                break;
+                            else
+                                fs.Seek(-2, SeekOrigin.Current);
+                            datas.Add(br.ReadByte());
+                        }
+                        retn += Byte2Hex(datas.ToArray(), true);
+                        break;
+
+                }
+                if (end >= 0)
+                {
+                    retn += " [" + Byte2Hex(BitConverter.GetBytes((ushort)end)) + "]";
+                }
+                /*ch = br.ReadByte();
+                while (ch == 0)
+                {
+                    retn += " [00]";
+                    ch = br.ReadByte();
+                }*/
+                /*while (fs.Position + 1 < fs.Length)
+                {
+                    retn += " [" + Byte2Hex(BitConverter.GetBytes(br.ReadUInt16())) + "]";
+                }
+                if (fs.Position < fs.Length)
+                {
+                    retn += " [" + Byte2Hex(br.ReadByte()) + "]";
+                }*/
+                retn = flag + " "+ retn;
+
+            }
+
+
+            if (retn != "    " && retn != ""  && debug)
+            {
+                Console.WriteLine(retn);
+            }
+
+            return retn;
+        }
+        public void DeCompressISLAND()
+        {
+            List<string> ctrl_str = new List<string>();
+            StreamWriter sw_ctrl = new StreamWriter(path + "..ctl");
+            //Test01(pathnames[ss], save_path);
+            /*if (scr_file.IndexOf("FLOWJUMP") >= 0)
+            return;*/
+            //List<byte> bytes = new List<byte>();
+            List<string> strs = new List<string>();
+
+            //bytes.AddRange(br.ReadBytes((int)fs.Length));
+
+
+            //int i = 0;
+            bool spker = false;//说话者标记
+            int line_num = 0;
+            while (fs.Position < fs.Length)
+            {
+                byte type = br.ReadByte();
+                if (type == 0x18)//文本开头
+                {
+                    if (fs.Position >= fs.Length) break;
+                    
+                    //Console.WriteLine("{0}", fs.Position);
+                    br.ReadBytes(3);//序号01，从XX XX 80开始递增
+                    if (fs.Position >= fs.Length) break;
+                    if (br.ReadUInt16() == line_num)//文本序号
+                    {
+                        if (debug)
+                            Console.WriteLine("{0} {1}", fs.Position, line_num);
+                        if (fs.Position >= fs.Length) break;
+                        br.ReadBytes(2);//序号02，可能是语音序号
+                        spker = false;
+                        if (br.ReadByte() == 0x60)//存在说话者
+                            spker = true;
+                        else
+                            fs.Seek(-1, SeekOrigin.Current);
+                        List<byte> str_tmp = new List<byte>();
+                        while (true)
+                        {
+                            str_tmp.Add(br.ReadByte());
+                            UInt16 str_end = br.ReadUInt16();
+                            if (str_end == 0x0500 || str_end == 0x0400 || str_end == 0x0300 || str_end == 0x0200 || str_end == 0x0100)
+                                break;
+                            else
+                                fs.Seek(-2, SeekOrigin.Current);
+                        }
+                        string str_line = Encoding.GetEncoding("Shift-JIS").GetString(str_tmp.ToArray());
+                        strs.Add(str_line);
+                        line_num++;
+                    }
+                    else
+                    {
+                        fs.Seek(-5, SeekOrigin.Current);
+                    }
+                }
+                if (type == 0x71)//选项开头01
+                {
+                    if (br.ReadByte() == 0x17)//选项开头02
+                    {
+                        br.ReadBytes(2);//未知
+                        if (br.ReadUInt32() == 0x40000000)//@
+                        {
+                            List<byte> str_tmp = new List<byte>();
+                            while (true)
+                            {
+                                str_tmp.Add(br.ReadByte());
+                                UInt16 str_end = br.ReadUInt16();
+                                if (str_end == 0x0000)
+                                    break;
+                                else
+                                    fs.Seek(-2, SeekOrigin.Current);
+                            }
+                            string str_line = Encoding.GetEncoding("Shift-JIS").GetString(str_tmp.ToArray());
+                            strs.Add(str_line);
+                        }
+                        else
+                        {
+                            fs.Seek(-7, SeekOrigin.Current);
+                        }
+
+                    }
+                    else
+                    {
+                        fs.Seek(-1, SeekOrigin.Current);
+                    }
+                }
+            }
+
+            br.Close();
+            fs.Close();
+            StreamWriter sw = new StreamWriter(path + ".txt");
+
+            Console.WriteLine("filename:{0}  num:{1}", Path.GetFileName(path), strs.Count);
+            foreach (string line in strs)
+            {
+                if (line == "　" || line == "")
+                    continue;
+                int find_index = line.IndexOf("$");
+                while (find_index >= 0)
+                {
+                    string tmp = "";//Path.GetFileName(filename) + "," + i.ToString() + ",";
+                    do
+                    {
+                        tmp += line[find_index];
+                        if (find_index + 1 < line.Length)
+                            find_index++;
+                        else
+                            break;
+                    } while (line[find_index] < 256 && line[find_index] != '$');
+                    if (ctrl_str.IndexOf(tmp) < 0)
+                        ctrl_str.Add(tmp);
+                    find_index = line.IndexOf("$", find_index + 1);
+                }
+                //Console.WriteLine(line.Replace("\n",@"\n"));
+
+                sw.WriteLine(line);
+                //sw.WriteLine();
+            }
+            //Console.ReadKey();
+            sw.Close();
+
+
+            foreach (string str in ctrl_str)
+            {
+                sw_ctrl.WriteLine(str);
+            }
+            sw_ctrl.Close();
+            Console.ReadKey();
         }
         public void DeCompress()
         {
@@ -777,6 +1185,8 @@ namespace ProtScript
                 dic = GameCode.CL.Split('\n');
             else if (game == "SP")
                 dic = GameCode.SP.Split('\n');
+            else if (game == "ISLAND")
+                dic = GameCode.ISLAND.Split('\n');
             else
                 throw new Exception("未找到指定游戏");
             decompress_dic.Clear();
