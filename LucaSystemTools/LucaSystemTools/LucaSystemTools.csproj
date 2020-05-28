@@ -48,7 +48,7 @@
     <Compile Include="CZ1Parser.cs" />
     <Compile Include="DatParser.cs" />
     <Compile Include="CZ3Parser.cs" />
-    <Compile Include="FontParser.cs" />
+    <Compile Include="FontInfoParser.cs" />
     <Compile Include="Utils\LzwUtil2.cs" />
     <Compile Include="Utils\LzwUtil.cs" />
     <Compile Include="PakTools.cs" />
