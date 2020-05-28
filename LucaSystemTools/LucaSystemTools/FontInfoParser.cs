@@ -11,7 +11,7 @@ using System.IO;
 
 namespace ProtFont
 {
-    class FontInfo
+    class FontInfoParser
     {
         //作者：DeQxJ00
         //时间：2019.1.17

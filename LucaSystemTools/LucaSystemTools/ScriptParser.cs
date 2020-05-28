@@ -1181,14 +1181,15 @@ namespace ProtScript
         {
 
             string[] dic = new string[0];
-            if (game == "CL")
-                dic = GameCode.CL.Split('\n');
-            else if (game == "SP")
-                dic = GameCode.SP.Split('\n');
-            else if (game == "ISLAND")
-                dic = GameCode.ISLAND.Split('\n');
+            string path = Path.Combine("OPCODE", game + ".txt");
+            if (File.Exists(path))
+            {
+                dic = File.ReadAllLines(path);
+            }
             else
+            {
                 throw new Exception("未找到指定游戏");
+            }
             decompress_dic.Clear();
             compress_dic.Clear();
             for (int i = 0; i < dic.Length; i++)
