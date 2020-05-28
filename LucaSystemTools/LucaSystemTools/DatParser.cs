@@ -13,7 +13,7 @@ namespace ProtImage
 
     public class DatParser:AbstractFileParser
     {
-        private Bitmap Export(byte[] Texture)
+        private Bitmap Export(byte[] Texture,string infile)
         {
 
             StructReader Reader = new StructReader(new MemoryStream(Texture));
@@ -23,7 +23,7 @@ namespace ProtImage
             Pixel32[] ColorPanel = new Pixel32[0];
 
             uint Signature = Header.Signature;
-            int PixivBytes = 4;
+            int PixivBytes = 0;
             int DatType = 1;
 
             if (Signature == 0x00200102)
@@ -37,7 +37,8 @@ namespace ProtImage
             }
             else
             {
-                //throw new BadImageFormatException();
+                Console.WriteLine("Unsupport Format Signature:" + Header.Signature);
+                File.AppendAllText( "ErrOutput.txt", "Unsupport Format Signature:" + Header.Signature+"\r\n"+ infile + "\r\n");
             }
 
             if (Header.ColorbitsType == 0x80)
@@ -51,6 +52,12 @@ namespace ProtImage
             else if (Header.ColorbitsType == 0x81)
             {
                 PixivBytes = 1;
+            }
+            else
+            {
+                Console.WriteLine("Unsupport Format ColorbitsType:" + Header.ColorbitsType);
+                File.AppendAllText("ErrOutput.txt", "Unsupport Format ColorbitsType:" + Header.ColorbitsType + "\r\n" + infile + "\r\n");
+                return null;
             }
 
             if (DatType == 2)
@@ -232,7 +239,8 @@ namespace ProtImage
         public void DatToPng(string infile)
         {
             BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
-            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
+            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length), infile);
+            if(texture!=null)
             texture.Save(infile + ".png", ImageFormat.Png);
             br.Close();
         }
