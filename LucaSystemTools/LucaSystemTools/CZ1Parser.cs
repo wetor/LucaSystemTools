@@ -147,11 +147,6 @@ namespace ProtImage
             Reader.Close();
             return Picture;
         }
-        //作者：Wetor
-        //时间：2019.1.18
-
-        //作者：Wetor
-        //时间：2019.1.18
 
         //作者：Wetor
         //时间：2019.1.18

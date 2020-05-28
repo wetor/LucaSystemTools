@@ -54,11 +54,6 @@
     <Compile Include="PakTools.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="GameCode.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>GameCode.resx</DependentUpon>
-    </Compile>
     <Compile Include="PsbScript.cs" />
     <Compile Include="ScriptParser.cs" />
     <Compile Include="StructStream.cs" />
@@ -68,14 +63,15 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="CL.txt" />
-    <Content Include="SP.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="GameCode.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>GameCode.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
+    <Content Include="OPCODE\CL.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\ISLAND.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\SP.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

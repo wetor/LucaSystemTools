@@ -20,10 +20,6 @@ namespace LucaSystemTools
         static string work = @"C:\Users\29293\Desktop\Prototype\";
         static void Main(string[] args)
         {
-
-            DatParser datParser =new DatParser();
-            datParser.DatToPng("0928_4D1DE99.dat");
-
 #if false //反编译全部脚本
             
             var files = Directory.GetFiles(work + @"SCRIPT.PAK_unpacked", "*");
@@ -42,7 +38,7 @@ namespace LucaSystemTools
                 if (Path.GetExtension(file) == ".txt") continue;
                 for(int i = 0; i < black_list.Length; i++)
                 {
-                    if (Path.GetFileName(file) == black[i])
+                    if (Path.GetFileName(file) == black_list[i])
                     {
                         flag = true;
                         break;
@@ -59,7 +55,7 @@ namespace LucaSystemTools
 #if false //反编译单个脚本
             //
             ScriptParser scr = new ScriptParser(work + @"island\SCRIPT.PAK_unpacked\KAR01", true);
-            scr.DeCompress();
+            scr.DeCompressISLAND2();
             //scr.Compress();
             scr.Close();
 #endif
@@ -98,8 +94,9 @@ namespace LucaSystemTools
                 psb.Close();
             }
 #endif
-            //DatParser dat = new DatParser();
-            //dat.DatToPng(work + @"prot_tblpak_v11\0884_85630CE\0884_85630CE.dat");
+
+            DatParser dat = new DatParser();
+            dat.DatToPng(work + @"Debug\0928_4D1DE99.dat");
             //PAKManager.Pack(work + @"OriginFile\SCRIPT.PAK.pakhead", "Shift-Jis");
             //PAKManager.Unpack(work + @"SCRIPT.PAK", "Shift-Jis");
             //CZ1Parser cz1 = new CZ1Parser();

@@ -6,13 +6,45 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
-using LucaSystem;
 
 namespace ProtImage
 {
 
     public class DatParser
     {
+
+
+
+        public static string Decompress(List<int> compressed)
+        {
+            // build the dictionary
+            Dictionary<int, string> dictionary = new Dictionary<int, string>();
+            for (int i = 0; i < 256 + 1; i++)
+                dictionary.Add(i, ((char)i).ToString());
+
+            string w = dictionary[compressed[0]];
+            compressed.RemoveAt(0);
+            StringBuilder decompressed = new StringBuilder(w);
+
+            foreach (int k in compressed)
+            {
+                string entry = null;
+                if (dictionary.ContainsKey(k))
+                    entry = dictionary[k];
+                else if (k == dictionary.Count)
+                    entry = w + w[0];
+
+                decompressed.Append(entry);
+
+                // new sequence; add it to the dictionary
+                dictionary.Add(dictionary.Count, w + entry[0]);
+
+                w = entry;
+            }
+
+            return decompressed.ToString();
+        }
+
         private Bitmap Export(byte[] Texture)
         {
 
@@ -77,13 +109,8 @@ namespace ProtImage
                     lmzBytes.Add(Reader.ReadUInt16());
                 }
                 //解压lzw
-                string str = LzwUtil2.Decompress(lmzBytes);
-                if (nextBytes.Count > 0)
-                {
-                    Console.WriteLine("111");
-                    unBytes.AddRange(nextBytes);
-                    nextBytes.Clear();
-                }
+                string str = Decompress(lmzBytes);
+
 
                 foreach (var c in str)
                 {
@@ -91,27 +118,19 @@ namespace ProtImage
                 }
                 //处理颜色拆分
                 int pixivNum = unBytes.Count / Header.PixivBytes;
-                while (unBytes.Count % Header.PixivBytes != 0)
-                {
-                    nextBytes.Insert(0, unBytes[unBytes.Count - 1]);
-                    unBytes.RemoveAt(unBytes.Count - 1);
-                }
+
                 int lineBytesNum = Header.Width * Header.PixivBytes;
                 byte[] pre_line = new byte[lineBytesNum];
                 byte[] curr_line = new byte[lineBytesNum];
                 for (int idx = 0; idx < Math.Ceiling((double)pixivNum / (double)Header.Width); idx++)
                 {
                     unBytes.CopyTo(idx * lineBytesNum, curr_line, 0, (idx + 1) * lineBytesNum < unBytes.Count ? lineBytesNum : unBytes.Count % lineBytesNum);
-                    if (idx == 0)//基准行
-                    {
-                    }
-                    else
+                    if (idx != 0)
                     {
                         for (int x = 0; x < lineBytesNum; x++)
                         {
                             curr_line[x] += pre_line[x];
                             curr_line[x]--;
-                            curr_line[x] = curr_line[x] == 0 ? (byte)0xFF : curr_line[x]; //有损还原
                         }
                     }
                     for (int x = 0; x < lineBytesNum && idx * lineBytesNum + x < unBytes.Count; x++)
@@ -119,7 +138,6 @@ namespace ProtImage
                         unBytes[idx * lineBytesNum + x] = curr_line[x];
                     }
                     curr_line.CopyTo(pre_line, 0);
-
                 }
                 output.AddRange(unBytes);
 
@@ -129,7 +147,7 @@ namespace ProtImage
             MemoryStream ms = new MemoryStream(output.ToArray());
             byte[] bytArray4Count = new byte[4];
             ms.Seek(0, SeekOrigin.Begin);
-            if (Header.ColorbitsType == 0x00800101)//32
+            if (Header.ColorbitsType == 0x00800101 || Header.ColorbitsType == 0x02800101)//32
             {
                 Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
                 for (int y = 0; y < Header.Heigth; y++)
@@ -147,7 +165,7 @@ namespace ProtImage
                     }
             }
 
-            else if (Header.ColorbitsType == 0x00A80101)//24 rgb
+            else if (Header.ColorbitsType == 0x00A80101 || Header.ColorbitsType == 0x02A80101)//24 rgb
             {
                 Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format24bppRgb);
                 for (int y = 0; y < Header.Heigth; y++)
@@ -164,94 +182,6 @@ namespace ProtImage
                         Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
                     }
 
-            }
-            else if (Header.ColorbitsType == 0x02800101) //32
-            {
-                Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
-
-                byte[] data = output.ToArray();
-                byte[] curr_line = new byte[Header.Width * 4];
-                byte[] pre_line = new byte[Header.Width * 4];
-                i = 0;
-                int ii = 0;
-                for (int y = 0; y < Header.Heigth; y++)
-                {
-                    Buffer.BlockCopy(data, i, curr_line, 0, Header.Width * 4);
-                    if (ii < color_line.Count && y == color_line[ii])
-                        ii++;
-                    else
-                    {
-                        for (int x = 0; x < Header.Width * 4; x++)
-                        {
-                            curr_line[x] += pre_line[x];
-                        }
-                    }
-                    for (int x = 0; x < Header.Width; x++)
-                    {
-                        Pixel.R = curr_line[x * 4 + 0];// == 0 ? (byte)0xFF : curr_line[x * 3 + 0];
-                        Pixel.G = curr_line[x * 4 + 1];// == 0 ? (byte)0xFF : curr_line[x * 3 + 1];
-                        Pixel.B = curr_line[x * 4 + 2];// == 0 ? (byte)0xFF : curr_line[x * 3 + 2];
-                        Pixel.A = curr_line[x * 4 + 3];
-                        //Pixel.A = bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3];
-
-                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
-                        //Picture.SetPixel(x, y, Color.FromArgb( , curr_line[x * 3 + 1], curr_line[x * 3 + 2]));
-                    }
-                    //curr_line.CopyTo(pre_line, 0);
-                    i += Header.Width * 4;
-
-                }
-            }
-            else if (Header.ColorbitsType == 0x02A80101)//24 argb
-            {
-                Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
-
-                byte[] data = output.ToArray();
-                byte[] curr_line = new byte[Header.Width * 3];
-                byte[] pre_line = new byte[Header.Width * 3];
-                i = 0;
-                int ii = 0;
-                for (int y = 0; y < Header.Heigth; y++)
-                {
-                    Buffer.BlockCopy(data, i, curr_line, 0, Header.Width * 3);
-                    if (ii < color_line.Count && y == color_line[ii])
-                    {
-                        ii++;
-                    }
-                    else
-                    {
-                        for (int x = 0; x < Header.Width * 3; x++)
-                        {
-                            curr_line[x] += pre_line[x];
-                        }
-                    }
-                    for (int x = 0; x < Header.Width; x++)
-                    {
-                        Pixel.R = curr_line[x * 3 + 0];// == 0 ? (byte)0xFF : curr_line[x * 3 + 0];
-                        Pixel.G = curr_line[x * 3 + 1];// == 0 ? (byte)0xFF : curr_line[x * 3 + 1];
-                        Pixel.B = curr_line[x * 3 + 2];// == 0 ? (byte)0xFF : curr_line[x * 3 + 2];
-                        //Pixel.A = bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3];
-
-                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
-                        //Picture.SetPixel(x, y, Color.FromArgb( , curr_line[x * 3 + 1], curr_line[x * 3 + 2]));
-                    }
-                    //curr_line.CopyTo(pre_line, 0);
-                    i += Header.Width * 3;
-
-                }
-
-
-
-
-                /* for (int x = 0; x < Header.Width; x++)
-                 {
-                     ms.Read(bytArray4Count, 0, 3); //
-                     Pixel.R = bytArray4Count[0] == 0 ? (byte)0xFF : bytArray4Count[0];
-                     Pixel.G = bytArray4Count[1] == 0 ? (byte)0xFF : bytArray4Count[1];
-                     Pixel.B = bytArray4Count[2] == 0 ? (byte)0xFF : bytArray4Count[2];
-                     Pixel.A = 0xFF;//bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3]; ;
-                     Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
-                 }*/
             }
 
             Reader.Close();
