@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using LucaSystem.Utils;
+using McMaster.Extensions.CommandLineUtils;
 using ProtScript;
 using ProtPak;
 using ProtImage;
@@ -17,96 +19,21 @@ namespace LucaSystemTools
      */
     class Program
     {
-        static string work = @"C:\Users\29293\Desktop\Prototype\";
+        public static bool debug = false;
         static void Main(string[] args)
         {
-#if false //反编译全部脚本
-            
-            var files = Directory.GetFiles(work + @"SCRIPT.PAK_unpacked", "*");
-            string[] black_list = new string[] // 跳过的脚本文件
+            if (args.Length > 0)
             {
-                "_BUILD_COUNT",
-                "_VARNUM",
-                "_TASK",
-                "_SCR_LABEL",
-                "_CGMODE",
-                "_VOICE_PARAM"
-            };
-            foreach (var file in files)
-            {
-                bool flag = false;
-                if (Path.GetExtension(file) == ".txt") continue;
-                for(int i = 0; i < black_list.Length; i++)
-                {
-                    if (Path.GetFileName(file) == black_list[i])
-                    {
-                        flag = true;
-                        break;
-                    }
-                }
-                if (flag) continue;
-
-                Console.WriteLine(file);
-                ScriptParser scr = new ScriptParser(file);
-                scr.DeCompress();
-                scr.Close();
+                CommandLineApplication.Execute<CommandLineUtil>(args);
+                Console.WriteLine("ok!");
             }
-#endif
-#if false //反编译单个脚本
-            //
-            ScriptParser scr = new ScriptParser(work + @"island\SCRIPT.PAK_unpacked\KAR01", true);
-            scr.DeCompressISLAND2();
-            //scr.Compress();
-            scr.Close();
-#endif
-            /*PsbScript psb = new PsbScript(work + @"prot_tblpak_v11\psvscr\04_3A6E269.psb", true);
-            psb.DeCompress();
-            psb.Close();*/
-
-#if false //反编译单个脚本
-            var files = Directory.GetFiles(work + @"prot_tblpak_v11\imgscr\", "*.psb");
-            string[] black_list = new string[] // 跳过的脚本文件
+            else
             {
-                "_BUILD_COUNT",
-                "_VARNUM",
-                "_TASK",
-                "_SCR_LABEL",
-                "_CGMODE",
-                "_VOICE_PARAM"
-            };
-            foreach (var file in files)
-            {
-                bool flag = false;
-                if (Path.GetExtension(file) == ".txt") continue;
-                for (int i = 0; i < black_list.Length; i++)
-                {
-                    if (Path.GetFileName(file) == black_list[i])
-                    {
-                        flag = true;
-                        break;
-                    }
-                }
-                if (flag) continue;
-
-                Console.WriteLine(file);
-                PsbScript psb = new PsbScript(file);
-                psb.DeCompress();
-                psb.Close();
+                Console.WriteLine("please input params");
+                Console.ReadLine();
             }
-#endif
-
-            DatParser dat = new DatParser();
-            dat.DatToPng(work + @"Debug\0928_4D1DE99.dat");
-            //PAKManager.Pack(work + @"OriginFile\SCRIPT.PAK.pakhead", "Shift-Jis");
-            //PAKManager.Unpack(work + @"SCRIPT.PAK", "Shift-Jis");
-            //CZ1Parser cz1 = new CZ1Parser();
-            //cz1.CZ1ToPng(work + @"OriginFile\SYSCG.PAK_unpacked\CGM_NAME06");
-            //cz1.PngToCZ1(work + @"UnpackFile\FONT.PAK_unpacked\ゴシック38.png");
-            //CZ3Parser cz3 = new CZ3Parser();
-            //cz3.CZ3ToPng(work + @"Temp\CGM_SELECT");
-            Console.WriteLine("ok!");
-            Console.ReadKey();
-
+          
+           
         }
     }
 }

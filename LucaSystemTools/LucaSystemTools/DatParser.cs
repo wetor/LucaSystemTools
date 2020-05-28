@@ -11,7 +11,7 @@ using LucaSystem;
 namespace ProtImage
 {
 
-    public class DatParser
+    public class DatParser:AbstractFileParser
     {
         private Bitmap Export(byte[] Texture)
         {
@@ -60,12 +60,17 @@ namespace ProtImage
                 for (int j = 0; j < ColorPanel.Length; j++)
                 {
                     //TODO 颜色表的 颜色还有错误
-                    tmpPixel.B = Reader.ReadByte();
-                    tmpPixel.G = Reader.ReadByte();
                     tmpPixel.R = Reader.ReadByte();
+                    tmpPixel.G = Reader.ReadByte();
+                    tmpPixel.B = Reader.ReadByte();
                     tmpPixel.A = Reader.ReadByte();
+                    tmpPixel.R = (byte)(tmpPixel.R == 0 ? 0xFF : tmpPixel.R);
+                    tmpPixel.G = (byte)(tmpPixel.G == 0 ? 0xFF : tmpPixel.G);
+                    tmpPixel.B = (byte)(tmpPixel.B == 0 ? 0xFF : tmpPixel.B);
+                    tmpPixel.A = (byte)(tmpPixel.A == 0 ? 0xFF : tmpPixel.A);
                     ColorPanel[j] = tmpPixel;
                 }
+
                 //256*4
                 Reader.ReadUInt32(); //10 00 00 00  //16 Unknow
                 Reader.ReadUInt32();   //38 04 00 00  //1080 Unknow
@@ -98,8 +103,8 @@ namespace ProtImage
                 uint pre_sum = (uint)Math.Ceiling(sum);
                 sum += (float)fileRawSize / (float)Header.Width / (float)PixivBytes;
                 uint a = (uint)Math.Ceiling(sum) - pre_sum;
-                sum2 += (uint)(a * 960 * PixivBytes);
-                Console.WriteLine("{0} {1} {2}  {3} {4}", a * 960 * PixivBytes, fileRawSize, a, sum2, sum);
+                sum2 += (uint)(a * Header.Width * PixivBytes);
+                Console.WriteLine("{0} {1} {2}  {3} {4}", a * Header.Width * PixivBytes, fileRawSize, a, sum2, sum);
 
             }
             color_line.Add((uint)Math.Ceiling(sum));
@@ -204,20 +209,18 @@ namespace ProtImage
 
             else if (PixivBytes == 1)//8 argb
             {
-                //Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format24bppRgb);
-                //for (int y = 0; y < Header.Heigth; y++)
-                //for (int x = 0; x < Header.Width; x++)
-                //{
+                Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
+                for (int y = 0; y < Header.Heigth; y++)
+                for (int x = 0; x < Header.Width; x++)
+                {
+                    byte b = (byte)ms.ReadByte(); //
+                    Pixel.R = ColorPanel[b].R;
+                    Pixel.G = ColorPanel[b].G;
+                    Pixel.B = ColorPanel[b].B;
+                    Pixel.A = ColorPanel[b].A;
 
-                //    ms.Read(bytArray4Count, 0, 3); //
-
-                //    Pixel.R = bytArray4Count[0] == 0 ? (byte)0xFF : bytArray4Count[0];
-                //    Pixel.G = bytArray4Count[1] == 0 ? (byte)0xFF : bytArray4Count[1];
-                //    Pixel.B = bytArray4Count[2] == 0 ? (byte)0xFF : bytArray4Count[2];
-                //    //Pixel.A = bytArray4Count[3] == 0 ? (byte)0xFF : bytArray4Count[3];
-
-                //    Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
-                //}
+                    Picture.SetPixel(x, y, Color.FromArgb(Pixel.A,Pixel.R, Pixel.G, Pixel.B));
+                }
             }
 
 
@@ -234,6 +237,15 @@ namespace ProtImage
             br.Close();
         }
 
+        public override void FileExport(string name)
+        {
+            DatToPng(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            throw new NotImplementedException();
+        }
     }
 
 

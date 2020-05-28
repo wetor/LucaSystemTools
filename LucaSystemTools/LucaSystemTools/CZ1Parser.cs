@@ -9,7 +9,7 @@ using LucaSystem;
 
 namespace ProtImage
 {
-    public class CZ1Parser
+    public class CZ1Parser : AbstractFileParser
     {
         private IEnumerable<byte> Decompress(StructReader Reader)
         {
@@ -261,6 +261,16 @@ namespace ProtImage
             Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
             texture.Save(infile + ".png", ImageFormat.Png);
             br.Close();
+        }
+
+        public override void FileExport(string name)
+        {
+            CZ1ToPng(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            PngToCZ1(name);
         }
     }
 

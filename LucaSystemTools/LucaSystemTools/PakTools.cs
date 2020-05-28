@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using LucaSystem;
 
 
 namespace ProtPak
@@ -13,14 +14,15 @@ namespace ProtPak
     //原作者：marcussacana
     //时间：2018.1
     //https://github.com/marcussacana/LucaSystem
-    public class PAKManager
+    public class PAKManager:AbstractFileParser
     {
         //作者：Wetor
         //时间：2019.7.25
         public static void Pack(string file, string name_coding = "UTF-8")
         {
-            string out_file = Path.GetDirectoryName(file) + "\\" + Path.GetFileNameWithoutExtension(file);
-            string in_dir = out_file + "_unpacked\\";
+           
+            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
+            string in_dir = out_file + "_unpacked"+Path.PathSeparator;
             out_file += ".out";
             Stream header = new StreamReader(file).BaseStream;
             PAKHeader pak_header = new PAKHeader();
@@ -108,7 +110,7 @@ namespace ProtPak
         //时间：2019.7.25
         public static void Unpack(string file,string name_coding = "UTF-8")
         {
-            string OutDir = file + "_unpacked\\";
+            string OutDir = file + "_unpacked"+Path.PathSeparator;
             Stream Packget = new StreamReader(file).BaseStream;
             uint header_len;
             var Files = Unpack(Packget, out header_len, name_coding);
@@ -205,6 +207,16 @@ namespace ProtPak
             Arr.CopyTo(NArr, 0);
             NArr[Arr.Length] = Val;
             Arr = NArr;
+        }
+
+        public override void FileExport(string name)
+        {
+            Unpack(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            Pack(name);
         }
     }
 

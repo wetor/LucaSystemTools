@@ -11,7 +11,7 @@ using LucaSystem;
 namespace ProtImage
 {
     //注：部分代码有参考现存代码，来源忘了 2020.5.24
-    public class CZ3Parser
+    public class CZ3Parser:AbstractFileParser
     {
 
         private IEnumerable<byte> Decompress(StructReader Reader)
@@ -217,6 +217,16 @@ namespace ProtImage
             Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
             texture.Save(infile + ".png", ImageFormat.Png);
             br.Close();
+        }
+
+        public override void FileExport(string name)
+        {
+            CZ3ToPng(name);
+        }
+
+        public override void FileImport(string name)
+        {
+            PngToCZ3(name);
         }
     }
 
