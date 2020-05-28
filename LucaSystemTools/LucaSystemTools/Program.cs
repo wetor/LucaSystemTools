@@ -20,6 +20,10 @@ namespace LucaSystemTools
         static string work = @"C:\Users\29293\Desktop\Prototype\";
         static void Main(string[] args)
         {
+
+            DatParser datParser =new DatParser();
+            datParser.DatToPng("0928_4D1DE99.dat");
+
 #if false //反编译全部脚本
             
             var files = Directory.GetFiles(work + @"SCRIPT.PAK_unpacked", "*");
