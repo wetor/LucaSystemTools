@@ -22,7 +22,7 @@ namespace ProtPak
         {
            
             string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
-            string in_dir = out_file + "_unpacked"+Path.PathSeparator;
+            string in_dir = out_file + "_unpacked"+Path.DirectorySeparatorChar;
             out_file += ".out";
             Stream header = new StreamReader(file).BaseStream;
             PAKHeader pak_header = new PAKHeader();
@@ -110,7 +110,7 @@ namespace ProtPak
         //时间：2019.7.25
         public static void Unpack(string file,string name_coding = "UTF-8")
         {
-            string OutDir = file + "_unpacked"+Path.PathSeparator;
+            string OutDir = file + "_unpacked"+Path.DirectorySeparatorChar;
             Stream Packget = new StreamReader(file).BaseStream;
             uint header_len;
             var Files = Unpack(Packget, out header_len, name_coding);
