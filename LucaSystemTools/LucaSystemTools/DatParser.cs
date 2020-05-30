@@ -82,9 +82,9 @@ namespace ProtImage
                 Reader.ReadUInt32(); //10 00 00 00  //16 Unknow
                 Reader.ReadUInt32();   //38 04 00 00  //1080 Unknow
             }
-            Reader.ReadUInt32();//total len next bytes
+            Reader.ReadUInt32();//totallennextbytes=blocksize_byteslen+compressedLen
             Reader.ReadUInt32();//w h
-            Reader.ReadUInt16();//unknow ushort
+            Reader.ReadUInt16();//blocksize_byteslen=2+2+4+4+blockcount*8
             int BlockCount = Reader.ReadUInt16();//block count
 
             uint decompressedLen = Reader.ReadUInt32();
