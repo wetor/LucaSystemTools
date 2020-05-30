@@ -42,4 +42,6 @@ NS两款游戏脚本相关，看代码就行了~
 
 - 做NS版的Summer Pocket完整汉化没问题了，NS版的Clannad的话要改下opcode的解释。
 
-- psv上和air同期的prototype的游戏，只要文件结构相似，那么图像基本是都能提取的，如遇到同引擎但奇怪的图像可以找@DeQxJ00，贴吧@就行
+- psv上和air同期的prototype的游戏，只要文件结构相似，那么图像基本是都能提取的，
+
+- 大体上psv的clannad air rewrite 是一类 ，psv上的 island flowers系列等是一类 ，如遇到同引擎的一些游戏可以参考下
