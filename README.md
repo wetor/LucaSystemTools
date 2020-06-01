@@ -12,7 +12,7 @@ NS两款游戏脚本相关，看代码就行了~
 
 **PakTools.cs**
 
-- 此引擎的pak包解包工具
+- 此引擎的pak包解包工具(这个pak是解的ns的,psv也类似但需要修改下)
 
 **CZ0Parser.cs、CZ1Parser.cs、CZ3Parser.cs**
 
