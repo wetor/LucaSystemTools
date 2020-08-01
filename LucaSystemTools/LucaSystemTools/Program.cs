@@ -17,6 +17,15 @@ namespace LucaSystemTools
      * 
      * 
      */
+    /** SP 和 ISLAND 需要屏蔽的文件
+     * _BUILD_COUNT
+     * _VARNUM
+     * _MESSAGE
+     * _TASK
+     * _SCR_LABEL
+     * _CGMODE
+     * _VOICE_PARAM
+     */
     class Program
     {
         public static bool debug = false;

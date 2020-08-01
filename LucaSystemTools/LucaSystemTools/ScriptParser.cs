@@ -1,6 +1,6 @@
 ﻿/*
  LucaSystem引擎.脚本部分
- 目前完美支持Nintendo Switch版本的《Summer Pocket》脚本反汇编以及汇编（但并不完善）
+ 目前完美支持Nintendo Switch版本的《Summer Pocket》以及PSVita《ISLAND》脚本反汇编以及汇编（但并不完善）
  Nintendo Switch版本的《Clannad》有待完善
  脚本文件解析
  作者：Wetor
@@ -48,41 +48,15 @@ namespace ProtScript
             }
 
         }
-        public void DeCompress(string path)
+        public void Decompile(string path)
         {
             if (!CanRead()) return;
-            //FileStream ffs = new FileStream(path + ".out", FileMode.Create);
-            //BinaryWriter bw = new BinaryWriter(ffs);
             FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
             StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
             while (fs.Position < fs.Length)
             {
                 byte[] tmp = ReadCodeBytes();
-                tsw.WriteLine(DeCompressCode(tmp));
-                //bw.Write(tmp);
-                //while (ffs.Position % 16 != 0)
-                //{
-                //    bw.Write((byte)0xff);
-                //}
-                //bw.Write(new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff });
-            }
-            tsw.Close();
-            tfs.Close();
-            //bw.Close();
-            //ffs.Close();
-        }
-        public void IslandDeCompress(string path)
-        {
-            if (!CanRead()) return;
-            FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
-            StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
-
-            while (fs.Position < fs.Length)
-            {
-                byte[] tmp = ReadCodeBytes();
-                //tsw.WriteLine(DeCompressCode(tmp));
-                //tsw.WriteLine(Byte2Hex(tmp, true));
-                tsw.WriteLine(IslandDeCompressCode(tmp));
+                tsw.WriteLine(DecompileCode(tmp));
             }
             tsw.Close();
             tfs.Close();
@@ -120,12 +94,13 @@ namespace ProtScript
             
             if (Program.debug)
                 Console.WriteLine("{0}  {1}", fs.Position, len);
-            //datas.AddRange(BitConverter.GetBytes(len));
+
             datas.AddRange(br.ReadBytes(len ));
             return datas.ToArray();
         }
-        private string DeCompressCode(byte[] line, bool rec = false)
+        private string DecompileCode(byte[] line, bool rec = false)
         {
+            if (line.Length == 0) return "";
             MemoryStream ms = new MemoryStream(line);
             BinaryReader mbr = new BinaryReader(ms);
             string retn = "";
@@ -140,12 +115,12 @@ namespace ProtScript
                     case GameScript.SP:
                         // 递归解析
                         if (scr_index == 0xFF) //0x00
-                            retn = "    " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
+                            retn = "    " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
                         else
                         {
                             retn = "[" + Byte2Hex(scr_index) + "]";
                             if (ms.Length - ms.Position > 0)
-                                retn += " " + DeCompressCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
+                                retn += " " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
                         }
                         break;
                     default:
@@ -155,67 +130,9 @@ namespace ProtScript
             else
             {
                 string flag = decompress_dic[scr_index].opcode;
-                byte args = mbr.ReadByte();
-                switch (flag)
-                {
-                    case "MESSAGE":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
-                        break;
-                    case "SELECT":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
-                        break;
-                    case "LOG":
-                        retn += " " + DeCompressFunc(ref mbr, Type.Byte, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
-                        break;
-                    case "IFN":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
-                        break;
-                    case "IFY":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS, Type.UInt32);
-                        break;
-                    case "TASK":
-                        if (args == 0x03)
-                        {
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
-                            UInt16 tmp = mbr.ReadUInt16();
-                            retn += " (" + tmp.ToString() + ")";
-                            if (tmp == 1)
-                                retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.UInt16, Type.PString);
-                        }
-                        break;
-                    case "FARCALL":
-                        if (args == 0x00)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.Byte, Type.StringSJIS, Type.UInt16, Type.UInt16);
-                        if (args == 0x01)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS, Type.UInt16, Type.UInt16);
-                        break;
-                    case "JUMP":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.StringSJIS);
-                        break;
-                    case "VARSTR":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16, Type.String);
-                        break;
-                    case "EQU":
-                        retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.StringSJIS);
-                        break;
-                    case "GOTO":
-                        if (args == 0x00)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
-                        if (args == 0x01)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt32);
-                        break;
-                    case "END":
-                        break;
-                    default:
-                        if (args == 0x01)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16);
-                        if (args == 0x02)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16);
-                        if (args == 0x03)
-                            retn += " " + DeCompressFunc(ref mbr, Type.UInt16, Type.UInt16, Type.UInt16);
-                        break;
-
-                }
+                byte flag2 = mbr.ReadByte();
+                string data = decompress_dic[scr_index].Load(ref mbr);
+                retn += (data != "" ? " " : "") + data;
                 while (ms.Position + 1 < ms.Length)
                 {
                     retn += " [" + Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
@@ -224,64 +141,29 @@ namespace ProtScript
                 {
                     retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
                 }
-                retn = flag + " " + "[" + Byte2Hex(args) + "]" + retn;
+                switch (game)
+                {
+                    case GameScript.ISLAND:
+                        //len = flag2 * 2
+                        retn = flag + retn;
+                        break;
+                    case GameScript.SP:
+                        retn = flag + " " + "[" + Byte2Hex(flag2) + "]" + retn;
+                        break;
+                    default:
+                        break;
+                }
             }
-
-
             if (retn != "    " && retn != "" && !rec && Program.debug)
             {
                 Console.WriteLine(retn);
             }
-
-
-
-            mbr.Close();
-            ms.Close();
-            return retn;
-        }
-        private string IslandDeCompressCode(byte[] line)
-        {
-            MemoryStream ms = new MemoryStream(line);
-            BinaryReader mbr = new BinaryReader(ms);
-            string retn = "";
-            byte scr_index = mbr.ReadByte();
-            if (!decompress_dic.ContainsKey(scr_index))
-            {
-                throw new Exception("未知的opcode！");
-            }
-            else
-            {
-                string flag = decompress_dic[scr_index].opcode;
-                int len = mbr.ReadByte() * 2 - 2;
-                string tmp = decompress_dic[scr_index].Load(ref mbr);
-                retn += (tmp!="" ? " " : "") + tmp;
-                while (ms.Position + 1 < ms.Length)
-                {
-                    retn += " [" + Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
-                }
-                if (ms.Position < ms.Length)
-                {
-                    retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
-                }
-                retn = flag + retn;
-
-            }
-
-
-            if (retn != "    " && retn != "" && Program.debug)
-            {
-                Console.WriteLine(retn);
-            }
-
-
-
             mbr.Close();
             ms.Close();
             return retn;
         }
 
-
-        public void Compress(string path)
+        public void Compile(string path)
         {
             FileStream ifs = new FileStream(path + ".txt", FileMode.Open);
             StreamReader isr = new StreamReader(ifs);
@@ -290,7 +172,7 @@ namespace ProtScript
             BinaryWriter obw = new BinaryWriter(ofs);
             while (isr.Peek()>=0)
             {
-                obw.Write(CompressCode(isr.ReadLine()));
+                obw.Write(CompileCode(isr.ReadLine()));
             }
             obw.Close();
             ofs.Close();
@@ -303,7 +185,7 @@ namespace ProtScript
             return fs.CanRead && fs.Position < fs.Length;
         }
 
-        private byte[] CompressCode(string code)
+        private byte[] CompileCode(string code)
         {
             code += " ";
             MemoryStream ms = new MemoryStream();
@@ -381,90 +263,11 @@ namespace ProtScript
             return retn;
 
         }
-
-        private string DeCompressFunc(ref BinaryReader tbr, params Type[] values)
-        {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            string retn = "";
-            bool end_flag = false;
-            for (int i = 0; i < values.Length; i++)
-            {
-                string tmp = "";
-                switch (values[i])
-                {
-                    case Type.Byte:
-                    case Type.Byte2:
-                    case Type.Byte3:
-                    case Type.Byte4:
-                        tmp = "[" + Byte2Hex(tbr.ReadBytes((int)values[i] + 1)) + "]";
-                        break;
-                    case Type.UInt16:
-                        tmp = "(" + tbr.ReadUInt16().ToString() + ")";
-                        break;
-                    case Type.UInt32:
-                        tmp = "{" + tbr.ReadUInt32().ToString() + "}";
-                        break;
-                    case Type.String:
-                    case Type.StringSJIS:
-                        {
-                            List<byte> buff = new List<byte>();
-                            if (values[i] == Type.String)
-                            {
-                                byte[] btmp = tbr.ReadBytes(2);
-                                while (!(btmp[0] == 0x00 && btmp[1] == 0x00))
-                                {
-                                    buff.AddRange(btmp);
-                                    btmp = tbr.ReadBytes(2);
-                                }
-                                tmp = "u\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
-                            }
-                            else if (values[i] == Type.StringSJIS)
-                            {
-                                byte btmp = tbr.ReadByte();
-                                while (btmp != 0x00 )
-                                {
-                                    buff.Add(btmp);
-                                    btmp = tbr.ReadByte();
-                                }
-                                Console.WriteLine(buff.Count);
-                                tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
-                            }
-                            break;
-                        }
-                    case Type.PString:
-                    case Type.PStringSJIS:
-                        {
-                            int len = tbr.ReadUInt16();
-                            if(values[i] == Type.PString)
-                                tmp = "p\"" + Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) + "\"";
-                            else if (values[i] == Type.PStringSJIS)
-                                tmp = "s\"" + Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2)) + "\"";
-                            break;
-                        }
-                    case Type.Opcode:
-                        byte scr_index = tbr.ReadByte();
-                        if (decompress_dic.ContainsKey(scr_index))
-                            tmp = decompress_dic[scr_index].opcode;
-                        else
-                            tmp = "[" + Byte2Hex(scr_index) + "]";
-                        break;
-                    default:
-                        break;
-                }
-
-                retn += tmp + ((i != values.Length - 1 || end_flag) ? " " : "");
-                retn = retn.Replace("\n", @"{\n}");
-                if (end_flag) break;
-
-            }
-            return retn;
-        }
         
         public void Close()
         {
 
             br.Close();
-
             fs.Close();
         }
         // 默认是SP的
@@ -526,14 +329,14 @@ namespace ProtScript
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
-            IslandDeCompress(name);
+            Decompile(name);
         }
 
         public override void FileImport(string name)
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
-            Compress(name);
+            Compile(name);
         }
     }
 

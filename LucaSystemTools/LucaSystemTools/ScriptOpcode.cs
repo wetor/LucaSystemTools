@@ -23,19 +23,88 @@ namespace ProtScript
     class ScriptOpcode
     {
         public string opcode = "UNKNOW";
+        public string comment = "";//注释说明
         public byte opcode_byte = 127;
         private List<Type> param = new List<Type>();
 
-        public ScriptOpcode(byte opcode_byte, string dic_text)
+        public ScriptOpcode(byte opcode_byte, string text)
         {
-            if (dic_text == "")
+            if (text == "")
                 return;
             this.opcode_byte = opcode_byte;
+            string tmp = "";
+            bool is_param = false;
+            bool is_comment = false;
+            for(int i = 0; i < text.Length;)
+            {
+                char ch = text[i];
+                switch (ch)
+                {
+                    case ' ':
+                        break;
+                    case '(':
+                        opcode = tmp;
+                        tmp = "";
+                        is_param = true;
+                        break;
+                    case ',':
+                        if (is_param && tmp!="")
+                        {
+                            param.Add((Type)Enum.Parse(typeof(Type), tmp, true));
+                        }
+                        else
+                        {
+                            Console.WriteLine("Opcode格式错误：{0}", text);
+                            break;
+                        }
+                        tmp = "";
+                        break;
+                    case ')':
+                        if (is_param)
+                        {
+                            if (tmp != "")
+                                param.Add((Type)Enum.Parse(typeof(Type), tmp, true));
+                            is_param = false;
+                        }
+                        else
+                        {
+                            Console.WriteLine("Opcode格式错误：{0}", i + 1, text);
+                            break;
+                        }
+                        tmp = "";
+                        break;
+                    case ';':
+                        tmp = "";
+                        is_comment = true;
+                        break;
+                    default:
+                        tmp += text[i];
+                        break;
+                }
+                if(i == text.Length - 1)
+                {
+                    if (is_comment)
+                    {
+                        comment = tmp;
+                        tmp = "";
+                    }
+                    else if(opcode == "" || opcode == "UNKNOW")
+                    {
+                        opcode = tmp;
+                        tmp = "";
+                    }
+                }
+                i++;
+            }
+            //Console.WriteLine(ToString());
+
+/*
+
             string[] split = dic_text.Split(" ");
             opcode = split[0];
             if (split.Length > 1)
                 for (int i = 1; i < split.Length; i++)
-                    param.Add((Type)Enum.Parse(typeof(Type), split[i], true));
+                    param.Add((Type)Enum.Parse(typeof(Type), split[i], true));*/
         }
         public ScriptOpcode(byte opcode_byte, string opcode, params Type[] values)
         {
@@ -138,13 +207,18 @@ namespace ProtScript
 
         public override string ToString()
         {
-            string retn = opcode + "(";
+            string retn = opcode + " (";
 
             foreach (Type type in param)
             {
                 retn += Enum.GetName(typeof(Type), type) + ", ";
             }
-            return retn.Remove(retn.Length - 2) + ")"; ;
+            retn = retn.Remove(retn.Length - 2);
+            if(param.Count>0)
+                retn += ")";
+            if (comment != "")
+                retn += " ;" + comment;
+            return retn;
   
             
         }
