@@ -42,7 +42,7 @@ namespace LucaSystem.Utils
                 case "scr":
                     if (!string.IsNullOrEmpty(OpcodePath))
                     {
-                        selclass = new ScriptParser(OpcodePath);
+                        selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true));
                     }
                     else
                     {
