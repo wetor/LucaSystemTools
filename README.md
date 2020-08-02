@@ -30,13 +30,17 @@ NS两款游戏脚本相关，看代码就行了~
 
 - air脚本的简单解析，psv的clannad应该同样适用，其中A3 A4结尾的为跳转指令，不写了，详情 [PSV AIR 汉化工具](https://github.com/YuriSizuku/GalgameReverse/blob/master/prototype/airpsv_text.py)
 
+**ScriptOpcode.cs**
+
+- opcode类，主要是用来解析已知参数的指令  
+
 **ScriptParser.cs**
 
-- ns的Summer Pocket脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题
+- ns的《Summer Pocket》以及psv的《ISLAND》脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题（JUMP、GOTO等跳转指令未实际测试）  
 
-- 理论同样适用ns的Clannad，但是opcode不太一样，没继续做适配
+- 理论同样适用ns的Clannad，但是opcode不太一样，没继续做适配  
 
-- 部分注释代码为试图反汇编PSV的island，不过因为都是胡乱猜的，缺乏实际依据，放弃。不过提取文本肯定是没问题的。之前有测试，文本可超长。
+- 编译回原脚本部分，暂不支持自定义编码，可以自行修改，后续会添加  
 
 ## 能做什么
 
@@ -45,3 +49,5 @@ NS两款游戏脚本相关，看代码就行了~
 - psv上和air同期的prototype的游戏，只要文件结构相似，那么图像基本是都能提取的，
 
 - 大体上psv的clannad air rewrite 是一类 ，psv上的 island flowers系列等是一类 ，如遇到同引擎的一些游戏可以参考下
+
+- 支持psv的ISLAND脚本编译与反编译
