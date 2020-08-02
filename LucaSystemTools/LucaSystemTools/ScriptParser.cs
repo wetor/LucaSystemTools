@@ -190,7 +190,7 @@ namespace ProtScript
             code += " ";
             MemoryStream ms = new MemoryStream();
             BinaryWriter mbw = new BinaryWriter(ms);
-
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             int i = 0;
             while(i+4 <= code.Length && code.Substring(i,4) == "    ")
             {
@@ -198,7 +198,8 @@ namespace ProtScript
                 i += 4;
             }
             int len_pos = (int)ms.Position;
-            mbw.Write(BitConverter.GetBytes((UInt16)0));//长度填充
+            mbw.Write(new byte[2]);//长度填充
+
             string token = "";
             bool str = false;
             for(; i < code.Length; i++)
@@ -219,32 +220,50 @@ namespace ProtScript
                             mbw.Write(BitConverter.GetBytes(Convert.ToUInt32(token.Substring(1, token.Length - 2))));
                             break;
                         case 'u'://unicode string + 00 00
+                            token = token.Replace(@"{\n}","\n");
                             mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
                             mbw.Write(new byte[] { 0x00, 0x00 });
                             break;
                         case 'j'://sjis string + 00
+                            token = token.Replace(@"{\n}", "\n");
                             mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
                             mbw.Write((byte)0x00);
                             break;
                         case 'p'://len + unicode string
+                            token = token.Replace(@"{\n}", "\n");
                             mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
                             mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
                             break;
                         case 's'://len + sjis string
+                            token = token.Replace(@"{\n}", "\n");
                             mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
                             mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
                             break;
                         default:
                             if (token[0] >= 'A' && token[0] <= 'Z' && compress_dic.ContainsKey(token))
-                                mbw.Write(compress_dic[token]);
+                            {
+                                switch (game)
+                                {
+                                    case GameScript.ISLAND:
+                                        // [opcode] length/2 code
+                                        // 1byte  1byte
+                                        ms.Seek(len_pos, SeekOrigin.Begin);
+                                        mbw.Write(compress_dic[token]);
+                                        mbw.Write(new byte[1]);
+                                        break;
+                                    case GameScript.SP:
+                                        // length [opcode] code
+                                        // 2byte  1byte
+                                        mbw.Write(compress_dic[token]);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
                             else
                                 throw new Exception("未知的指令或错误的数据格式:" + token);
                             break;
-
                     }
-
-
-
                     token = "";
                 }
                 else
@@ -254,10 +273,31 @@ namespace ProtScript
 
             }
             UInt16 len = (UInt16)(ms.Position - len_pos);
-            ms.Seek(len_pos,SeekOrigin.Begin);
-            mbw.Write(BitConverter.GetBytes(len));
+            switch (game)
+            {
+                case GameScript.ISLAND:
+                    // opcode [length/2] code
+                    // 1byte  1byte
+                    ms.Seek(len_pos+1, SeekOrigin.Begin);
+                    mbw.Write((byte)(len / 2));
+                    break;
+                case GameScript.SP:
+                    // [length] opcode code
+                    // 2byte  1byte
+                    ms.Seek(len_pos, SeekOrigin.Begin);
+                    mbw.Write(BitConverter.GetBytes(len));
+                    break;
+                default:
+                    break;
+            }
+
+            
 
             byte[] retn = ms.ToArray();
+            if (retn.Length>0 && Program.debug)
+            {
+                Console.WriteLine(ScriptParser.Byte2Hex(retn, true));
+            }
             mbw.Close();
             ms.Close();
             return retn;
@@ -292,7 +332,7 @@ namespace ProtScript
             for (int i = 0; i < dic.Length; i++)
             {
                 decompress_dic.Add((byte)i, new ScriptOpcode((byte)i,dic[i].Replace("\r", "")));
-                compress_dic.Add( dic[i].Replace("\r", ""), (byte)i);
+                compress_dic.Add(decompress_dic[(byte)i].opcode, (byte)i);
             }
         }
         public static byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
