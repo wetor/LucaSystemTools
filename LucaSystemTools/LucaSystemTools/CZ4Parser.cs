@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using LucaSystem;
 using LucaSystemTools;
+using LucaSystemTools.Utils;
 
 namespace ProtImage
 {
@@ -42,42 +43,22 @@ namespace ProtImage
             {
 
                 var bytes = Decompress(Reader);
+                int pcount = Header.Width * Header.Heigth;
                 byte[] data = bytes.ToArray();
+                byte[] data2 = new byte[pcount];
+                Buffer.BlockCopy(data, pcount * 3, data2, 0, pcount);
 
-                byte[] curr_line = new byte[Header.Width * 3];
-                byte[] pre_line = new byte[Header.Width * 3];
-                byte[] curr_line_alpha = new byte[Header.Width];
-                byte[] pre_line_alpha = new byte[Header.Width];
-                int alpha_start = Header.Width * Header.Heigth * 3; 
-                int i = 0, i2= alpha_start; //i2 alpha
+                int PixelByteCount = 3;
+                ImageFillPartten.LineDiffPattern(ref Picture, Header.Colorblock, PixelByteCount, data,null);
 
-                //RGB888 delta, the alpha delta is in the last
-                for (int y = 0; y < Header.Heigth; y++) 
-                {
-
-                    Buffer.BlockCopy(data, i, curr_line, 0, Header.Width * 3);
-                    Buffer.BlockCopy(data, i2, curr_line_alpha, 0, Header.Width);
-
-                    if (y % Header.Blockh != 0)
+                PixelByteCount = 1;
+                ImageFillPartten.LineDiffPattern(ref Picture, Header.Colorblock, PixelByteCount, data2,
+                    delegate (int x, int y, byte[] curr_line)
                     {
-                        for (int x = 0; x < Header.Width * 3; x++)
-                        {
-                            curr_line[x] += pre_line[x];
-                        }
-                        for (int x = 0; x < Header.Width; x++)
-                        {
-                            curr_line_alpha[x] += pre_line_alpha[x];
-                        }
-                    }
-                    for (int x = 0; x < Header.Width; x++)
-                    {
-                        Picture.SetPixel(x, y, Color.FromArgb(curr_line_alpha[x], curr_line[x * 3 + 0], curr_line[x * 3 + 1], curr_line[x * 3 + 2]));
-                    }
-                    curr_line.CopyTo(pre_line, 0);
-                    curr_line_alpha.CopyTo(pre_line_alpha, 0);
-                    i += Header.Width * 3;
-                    i2 += Header.Width;
-                }
+                        var pixel = Picture.GetPixel(x, y);
+                        Picture.SetPixel(x, y, Color.FromArgb(curr_line[x], pixel.R, pixel.G, pixel.B));
+
+                    });
             }
             Reader.Close();
             return Picture;

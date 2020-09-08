@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using LucaSystem;
 using LucaSystemTools;
+using LucaSystemTools.Utils;
 
 namespace ProtImage
 {
@@ -22,7 +23,7 @@ namespace ProtImage
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ3Header Header = new CZ3Header();
             Reader.ReadStruct(ref Header);
-            Header.Blockh = (ushort)Math.Ceiling((float)Header.Heigth / (float)Header.Colorblock);
+         
             if (Header.Signature != "CZ3\x0")
                 throw new BadImageFormatException();
 
@@ -39,38 +40,17 @@ namespace ProtImage
             }
             else if (Header.Colorbits == 32)//32
             {
-
-
                 var bytes = Decompress(Reader);
                 byte[] data = bytes.ToArray();
-
- 
-                byte[] curr_line = new byte[Header.Width * 4];
-                byte[] pre_line = new byte[Header.Width * 4];
-                int i = 0;
-                for (int y = 0; y < Header.Heigth; y++)
-                {
-
-                    Buffer.BlockCopy(data, i, curr_line, 0, Header.Width * 4);
-
-
-                    if (y % Header.Blockh != 0)
-                        for (int x = 0; x < Header.Width * 4; x++)
-                            curr_line[x] += pre_line[x];
-                    for (int x = 0; x < Header.Width; x++)
-                    {
-                        Picture.SetPixel(x, y, Color.FromArgb(curr_line[x * 4 + 3], curr_line[x * 4 + 0], curr_line[x * 4 + 1], curr_line[x * 4 + 2]));
-                    }
-                    curr_line.CopyTo(pre_line, 0);
-                    i += Header.Width * 4;
-
-                }
+                int PixelByteCount = 4;
+                ImageFillPartten.LineDiffPattern(ref Picture, Header.Colorblock, PixelByteCount, data,null);
             }
             Reader.Close();
             return Picture;
         }
 
-     
+
+
         //作者：Wetor
         //时间：2019.1.18
         public void PngToCZ3(string outfile)
