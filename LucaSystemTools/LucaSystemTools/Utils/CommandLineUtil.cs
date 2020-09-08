@@ -30,6 +30,9 @@ namespace LucaSystem.Utils
                 case "cz3":
                     selclass = new CZ3Parser();
                     break;
+                case "cz4":
+                    selclass = new CZ4Parser();
+                    break;
                 case "dat":
                     selclass = new DatParser();
                     break;
@@ -73,7 +76,7 @@ namespace LucaSystem.Utils
         [Option(Description = "FileName or FolderName", ShortName = "f")]
         public string FileName { get; set; }
 
-        [Option(Description = "FileType [cz0] [cz1] [cz3] [dat] [pak] [psb] [scr]", ShortName = "t")]
+        [Option(Description = "FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [scr]", ShortName = "t")]
         public string FileType { get; set; }
 
         [Option(Description = "ParserMode [import] or [export]", ShortName = "m")]
