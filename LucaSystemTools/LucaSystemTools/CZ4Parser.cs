@@ -7,47 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LucaSystem;
+using LucaSystemTools;
 
 namespace ProtImage
 {
-    //注：部分代码有参考现存代码，来源忘了 2020.5.24
-    public class CZ4Parser:AbstractFileParser
+//注：部分代码有参考现存代码，来源忘了 2020.5.24
+    public class CZ4Parser: CZParserBase
     {
-
-        private IEnumerable<byte> Decompress(StructReader Reader)
-        {
-            List<byte> output = new List<byte>();
-            uint fileCount = Reader.ReadUInt32();
-            Dictionary<int, uint> rawSizeList = new Dictionary<int, uint>();
-            Dictionary<int, uint> compressedSizeList = new Dictionary<int, uint>();
-            for (int i = 0; i < fileCount; i++)
-            {
-                uint fileCompressedSize = Reader.ReadUInt32();
-                uint fileRawSize = Reader.ReadUInt32();
-                rawSizeList.Add(i, fileRawSize);
-                compressedSizeList.Add(i, fileCompressedSize);
-
-            }
-
-            for (int i = 0; i < fileCount; i++)
-            {
-                List<int> lmzBytes = new List<int>();
-                int totalcount = (int)compressedSizeList[i];
-                for (int j = 0; j < totalcount; j++)
-                {
-                    lmzBytes.Add(Reader.ReadUInt16());
-                }
-                //解压lzw
-                /*byte[] re = unlzw(lmzBytes.ToArray());
-                output.AddRange(re);*/
-                string str = LzwUtil.Decompress(lmzBytes);
-                foreach (var c in str)
-                {
-                    output.Add((byte)c);
-                }
-            }
-            return output;
-        }
 
         //作者：Wetor, Devseed
         //时间：2020.9.8

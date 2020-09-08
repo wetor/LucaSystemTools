@@ -6,13 +6,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LucaSystem;
+using LucaSystemTools;
 
 namespace ProtImage
 {
     //作者：marcussacana
     //时间：2018.1
     //https://github.com/marcussacana/LucaSystem
-    public class CZ0Parser: AbstractFileParser
+    public class CZ0Parser: CZParserBase
 
     {
         byte[] Texture;
@@ -53,15 +54,6 @@ namespace ProtImage
 
         }
 
-        public override void FileExport(string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void FileImport(string name)
-        {
-            throw new NotImplementedException();
-        }
     }
     public struct CZ0Header
     {
