@@ -20,6 +20,8 @@ jobs:
         
     - name: cd
       run: cd LucaSystemTools
+    - name: cd
+      run: cd LucaSystemTools
     - name: Install dependencies
       run: dotnet restore
     - name: Build
