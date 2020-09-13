@@ -21,7 +21,8 @@ namespace ProtScript
     {
         ISLAND,
         SP,
-        CL
+        CL,
+        TAWL
     }
 
     public class ScriptParser:AbstractFileParser
@@ -41,6 +42,9 @@ namespace ProtScript
                     break;
                 case GameScript.SP:
                     InitDic("SP");
+                    break;
+                case GameScript.TAWL:
+                    InitDic("TAWL");
                     break;
                 default:
                     throw new Exception("不支持的游戏类型");
@@ -77,15 +81,7 @@ namespace ProtScript
                     fs.Seek(-2, SeekOrigin.Current);
                     break;
                 case GameScript.SP:
-                    // 00 填充部分，用0xFF标记
-                    byte tmp = br.ReadByte();
-                    while (tmp == 0x00)
-                    {
-                        datas.Add(0xFF);
-                        tmp = br.ReadByte();
-                    }
-                    fs.Seek(-1, SeekOrigin.Current);
-
+                case GameScript.TAWL:
                     len = br.ReadUInt16() - 2;
                     break;
                 default:
@@ -95,7 +91,12 @@ namespace ProtScript
             if (Program.debug)
                 Console.WriteLine("{0}  {1}", fs.Position, len);
 
-            datas.AddRange(br.ReadBytes(len ));
+            datas.AddRange(br.ReadBytes(len));
+            if (len % 2 != 0)
+            {
+                //长度非偶数，最后会有补位
+                br.ReadByte();
+            }
             return datas.ToArray();
         }
         private string DecompileCode(byte[] line, bool rec = false)
@@ -113,15 +114,10 @@ namespace ProtScript
                         throw new Exception("未知的opcode！");
                         break;
                     case GameScript.SP:
-                        // 递归解析
-                        if (scr_index == 0xFF) //0x00
-                            retn = "    " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
-                        else
-                        {
-                            retn = "[" + Byte2Hex(scr_index) + "]";
-                            if (ms.Length - ms.Position > 0)
-                                retn += " " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
-                        }
+                    case GameScript.TAWL:
+                        retn = "[" + Byte2Hex(scr_index) + "]";
+                        if (ms.Length - ms.Position > 0)
+                            retn += " " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
                         break;
                     default:
                         break;
@@ -148,6 +144,7 @@ namespace ProtScript
                         retn = flag + retn;
                         break;
                     case GameScript.SP:
+                    case GameScript.TAWL:
                         retn = flag + " " + "[" + Byte2Hex(flag2) + "]" + retn;
                         break;
                     default:
@@ -252,6 +249,7 @@ namespace ProtScript
                                         mbw.Write(new byte[1]);
                                         break;
                                     case GameScript.SP:
+                                    case GameScript.TAWL:
                                         // length [opcode] code
                                         // 2byte  1byte
                                         mbw.Write(compress_dic[token]);
@@ -282,6 +280,7 @@ namespace ProtScript
                     mbw.Write((byte)(len / 2));
                     break;
                 case GameScript.SP:
+                case GameScript.TAWL:
                     // [length] opcode code
                     // 2byte  1byte
                     ms.Seek(len_pos, SeekOrigin.Begin);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ProtScript
@@ -17,6 +18,7 @@ namespace ProtScript
         StringSJIS,
         PString,
         PStringSJIS,
+        ENString,
         Opcode,
         Skip
     }
@@ -149,6 +151,7 @@ namespace ProtScript
                         break;
                     case Type.String:
                     case Type.StringSJIS:
+                    case Type.ENString:
                         {
                             List<byte> buff = new List<byte>();
                             if (value == Type.String)
@@ -170,6 +173,42 @@ namespace ProtScript
                                     btmp = tbr.ReadByte();
                                 }
                                 tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
+                            }
+                            else if (value == Type.ENString)
+                            {
+                                byte btmp = tbr.ReadByte();
+                                while (btmp != 0x00)
+                                {
+                                    buff.Add(btmp);
+                                    btmp = tbr.ReadByte();
+                                }
+                                byte[] begin = new byte[] { 0xE2, 0x9D, 0x9D };
+                                byte[] end = new byte[] { 0xE2, 0x9D, 0x9E };
+
+                                int idx_begin = -1;
+                                int idx_end = -1;
+                                for (int i = 0; i < buff.Count - 2; i++)
+                                {
+                                    if (buff.GetRange(i, 3).SequenceEqual(begin))
+                                    {
+                                        idx_begin = i;
+                                    }
+                                    else if (buff.GetRange(i, 3).SequenceEqual(end))
+                                    {
+                                        idx_end = i;
+                                    }
+                                }
+                                //Console.WriteLine("debug:{0} {1}  len:{2}", idx_begin, idx_end, buff.Count);
+                                if (idx_begin !=-1 && idx_end != -1)
+                                {
+                                    //Console.WriteLine("debug:{0} {1}",idx_begin,idx_end);
+                                    buff.RemoveRange(idx_begin, 3);
+                                    buff.RemoveRange(idx_end - 3, 3);
+                                    buff.InsertRange(idx_begin, Encoding.ASCII.GetBytes(@"{\b}"));
+                                    idx_end += 1;
+                                    buff.InsertRange(idx_end, Encoding.ASCII.GetBytes(@"{\e}"));
+                                }
+                                tmp = "e\"" + Encoding.ASCII.GetString(buff.ToArray()) + "\"";
                             }
                             break;
                         }
