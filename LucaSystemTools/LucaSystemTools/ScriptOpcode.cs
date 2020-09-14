@@ -1,4 +1,10 @@
-﻿using System;
+﻿/*
+ LucaSystem引擎.脚本部分
+ 脚本文件解析
+ Wetor
+ 2020.9.14
+ */
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -14,30 +20,67 @@ namespace ProtScript
         Byte4,
         UInt16,
         UInt32,
-        String,
+        StringUnicode,
         StringSJIS,
-        PString,
-        PStringSJIS,
-        ENString,
+        StringUTF8,
+        LenStringUnicode,
+        LenStringSJIS,
         Opcode,
         Skip
     }
-    class ScriptOpcode
+    public struct Param
+    {
+        public Type type;
+        public bool nullable;
+        public Param(Type _type, bool _nullable)
+        {
+            type = _type;
+            nullable = _nullable;
+        }
+
+    }
+    public class ScriptOpcode
     {
         public string opcode = "UNKNOW";
         public string comment = "";//注释说明
         public byte opcode_byte = 127;
-        private List<Type> param = new List<Type>();
+        private List<Param> param = new List<Param>();
 
         public ScriptOpcode(byte opcode_byte, string text)
         {
-            if (text == "")
-                return;
             this.opcode_byte = opcode_byte;
+            param = InitParams(text, ref opcode, ref comment);
+            //Console.WriteLine(ToString());
+        }
+        public ScriptOpcode(byte opcode_byte, string opcode, params Param[] values)
+        {
+            this.opcode_byte = opcode_byte;
+            this.opcode = opcode;
+            param.AddRange(values);
+        }
+        public string ReadFunc(byte[] bytes)
+        {
+            MemoryStream ms = new MemoryStream(bytes);
+            BinaryReader mbr = new BinaryReader(ms);
+            string retn = ReadFunc(ref mbr, opcode, opcode_byte, param);
+            mbr.Close();
+            ms.Close();
+            return retn;
+        }
+        public string ReadFunc(ref BinaryReader tbr)
+        {
+            return ReadFunc(ref tbr, opcode, opcode_byte, param);
+        }
+        public static List<Param> InitParams(string text, ref string opcode, ref string comment)
+        {
+            List<Param> param = new List<Param>();
+            if (text == "")
+                return param;
             string tmp = "";
             bool is_param = false;
             bool is_comment = false;
-            for(int i = 0; i < text.Length;)
+            bool flag_nullable = false;
+            for (int i = 0; i < text.Length;)
             {
                 char ch = text[i];
                 switch (ch)
@@ -49,10 +92,14 @@ namespace ProtScript
                         tmp = "";
                         is_param = true;
                         break;
+                    case '!':
+                        flag_nullable = true;
+                        break;
                     case ',':
-                        if (is_param && tmp!="")
+                        if (is_param && tmp != "")
                         {
-                            param.Add((Type)Enum.Parse(typeof(Type), tmp, true));
+                            param.Add(new Param((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                            flag_nullable = false;
                         }
                         else
                         {
@@ -65,7 +112,8 @@ namespace ProtScript
                         if (is_param)
                         {
                             if (tmp != "")
-                                param.Add((Type)Enum.Parse(typeof(Type), tmp, true));
+                                param.Add(new Param((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                            flag_nullable = false;
                             is_param = false;
                         }
                         else
@@ -83,14 +131,14 @@ namespace ProtScript
                         tmp += text[i];
                         break;
                 }
-                if(i == text.Length - 1)
+                if (i == text.Length - 1)
                 {
                     if (is_comment)
                     {
                         comment = tmp;
                         tmp = "";
                     }
-                    else if(opcode == "" || opcode == "UNKNOW")
+                    else if (opcode == "" || opcode == "UNKNOW")
                     {
                         opcode = tmp;
                         tmp = "";
@@ -98,128 +146,86 @@ namespace ProtScript
                 }
                 i++;
             }
-            //Console.WriteLine(ToString());
-
-/*
-
-            string[] split = dic_text.Split(" ");
-            opcode = split[0];
-            if (split.Length > 1)
-                for (int i = 1; i < split.Length; i++)
-                    param.Add((Type)Enum.Parse(typeof(Type), split[i], true));*/
+            return param;
         }
-        public ScriptOpcode(byte opcode_byte, string opcode, params Type[] values)
-        {
-            this.opcode_byte = opcode_byte;
-            this.opcode = opcode;
-            param.AddRange(values);
-        }
-        public string Load(byte[] bytes)
-        {
-            MemoryStream ms = new MemoryStream(bytes);
-            BinaryReader mbr = new BinaryReader(ms);
-            string retn = Load(ref mbr);
-            mbr.Close();
-            ms.Close();
-            return retn;
-        }
-        public string Load(ref BinaryReader tbr)
+        public static string ReadFunc(ref BinaryReader tbr, string opcode, byte opcode_byte, List<Param> param)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             bool skip = false;
             string retn = "";
             string tmp = "";
             int count = 0;
-            foreach (Type value in param)
+            int curr_pos = (int)tbr.BaseStream.Position;
+            int tbr_len = (int)tbr.BaseStream.Length;
+            bool nullable_skip = false;
+            foreach (var value in param)
             {
+                Type type = value.type;
                 count++;
                 skip = false;
                 tmp = "";
-                switch (value)
+                curr_pos = (int)tbr.BaseStream.Position;
+                switch (type)
                 {
                     case Type.Byte:
                     case Type.Byte2:
                     case Type.Byte3:
                     case Type.Byte4:
-                        tmp = "[" + ScriptParser.Byte2Hex(tbr.ReadBytes((int)value + 1)) + "]";
-                        break;
+                        {
+                            tmp = "[" + ScriptUtil.Byte2Hex(tbr.ReadBytes((int)type + 1)) + "]";
+                            break;
+                        }
                     case Type.UInt16:
+                        if (value.nullable && curr_pos + 2 >= tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
                         tmp = "(" + tbr.ReadUInt16().ToString() + ")";
                         break;
                     case Type.UInt32:
+                        if (value.nullable && curr_pos + 4 >= tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
                         tmp = "{" + tbr.ReadUInt32().ToString() + "}";
                         break;
-                    case Type.String:
+                    case Type.StringUnicode:
                     case Type.StringSJIS:
-                    case Type.ENString:
+                    case Type.StringUTF8:
                         {
-                            List<byte> buff = new List<byte>();
-                            if (value == Type.String)
+                            if (type == Type.StringUnicode)
                             {
-                                byte[] btmp = tbr.ReadBytes(2);
-                                while (!(btmp[0] == 0x00 && btmp[1] == 0x00))
-                                {
-                                    buff.AddRange(btmp);
-                                    btmp = tbr.ReadBytes(2);
-                                }
-                                tmp = "u\"" + Encoding.Unicode.GetString(buff.ToArray()) + "\"";
+                                tmp = "$u\"" + Encoding.Unicode.GetString(ReadStringDoubleEnd(ref tbr)) + "\"";
                             }
-                            else if (value == Type.StringSJIS)
+                            else if (type == Type.StringSJIS)
                             {
-                                byte btmp = tbr.ReadByte();
-                                while (btmp != 0x00)
-                                {
-                                    buff.Add(btmp);
-                                    btmp = tbr.ReadByte();
-                                }
-                                tmp = "j\"" + Encoding.GetEncoding("Shift-Jis").GetString(buff.ToArray()) + "\"";
+                                tmp = "$j\"" + Encoding.GetEncoding("Shift-Jis").GetString(ReadStringSingleEnd(ref tbr)) + "\"";
                             }
-                            else if (value == Type.ENString)
+                            else if (type == Type.StringUTF8)
                             {
-                                byte btmp = tbr.ReadByte();
-                                while (btmp != 0x00)
-                                {
-                                    buff.Add(btmp);
-                                    btmp = tbr.ReadByte();
-                                }
-                                byte[] begin = new byte[] { 0xE2, 0x9D, 0x9D };
-                                byte[] end = new byte[] { 0xE2, 0x9D, 0x9E };
-
-                                int idx_begin = -1;
-                                int idx_end = -1;
-                                for (int i = 0; i < buff.Count - 2; i++)
-                                {
-                                    if (buff.GetRange(i, 3).SequenceEqual(begin))
-                                    {
-                                        idx_begin = i;
-                                    }
-                                    else if (buff.GetRange(i, 3).SequenceEqual(end))
-                                    {
-                                        idx_end = i;
-                                    }
-                                }
-                                //Console.WriteLine("debug:{0} {1}  len:{2}", idx_begin, idx_end, buff.Count);
-                                if (idx_begin !=-1 && idx_end != -1)
-                                {
-                                    //Console.WriteLine("debug:{0} {1}",idx_begin,idx_end);
-                                    buff.RemoveRange(idx_begin, 3);
-                                    buff.RemoveRange(idx_end - 3, 3);
-                                    buff.InsertRange(idx_begin, Encoding.ASCII.GetBytes(@"{\b}"));
-                                    idx_end += 1;
-                                    buff.InsertRange(idx_end, Encoding.ASCII.GetBytes(@"{\e}"));
-                                }
-                                tmp = "e\"" + Encoding.ASCII.GetString(buff.ToArray()) + "\"";
+                                tmp = "$8\"" + Encoding.UTF8.GetString(ReadStringSingleEnd(ref tbr)) + "\"";
                             }
                             break;
                         }
-                    case Type.PString:
-                    case Type.PStringSJIS:
+                    case Type.LenStringUnicode:
+                    case Type.LenStringSJIS:
                         {
+                            if (value.nullable && curr_pos + 2 >= tbr_len)
+                            {
+                                nullable_skip = true;
+                                break;
+                            }
                             int len = tbr.ReadUInt16();
-                            if (value == Type.PString)
-                                tmp = "p\"" + Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) + "\"";
-                            else if (value == Type.PStringSJIS)
-                                tmp = "s\"" + Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2)) + "\"";
+                            if (type == Type.LenStringUnicode)
+                            {
+                                tmp = "&u\"" + Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) + "\"";
+                            }
+                            else if (type == Type.LenStringSJIS)
+                            {
+                                tmp = "&j\"" + Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2)) + "\"";
+                            }
                             break;
                         }
                     case Type.Opcode:
@@ -227,7 +233,7 @@ namespace ProtScript
                         if(scr_index == opcode_byte)
                             tmp = opcode;
                         else
-                            tmp = "[" + ScriptParser.Byte2Hex(scr_index) + "]";
+                            tmp = "[" + ScriptUtil.Byte2Hex(scr_index) + "]";
                         break;
                     case Type.Skip:
                         skip = true;
@@ -236,21 +242,49 @@ namespace ProtScript
                     default:
                         break;
                 }
-
+                if (nullable_skip)
+                {
+                    if (retn.Length >= 1 && retn[retn.Length - 1] == ' ') 
+                    {
+                        retn = retn.Remove(retn.Length - 1);
+                    }
+                    break;
+                }
                 retn += tmp + ((count != param.Count && !skip) ? " " : "");
                 retn = retn.Replace("\n", @"{\n}");
 
             }
             return retn;
         }
-
+        private static byte[] ReadStringDoubleEnd(ref BinaryReader tbr)
+        {
+            List<byte> buff = new List<byte>();
+            byte[] btmp = tbr.ReadBytes(2);
+            while (!(btmp[0] == 0x00 && btmp[1] == 0x00))
+            {
+                buff.AddRange(btmp);
+                btmp = tbr.ReadBytes(2);
+            }
+            return buff.ToArray();
+        }
+        private static byte[] ReadStringSingleEnd(ref BinaryReader tbr)
+        {
+            List<byte> buff = new List<byte>();
+            byte btmp = tbr.ReadByte();
+            while (btmp != 0x00)
+            {
+                buff.Add(btmp);
+                btmp = tbr.ReadByte();
+            }
+            return buff.ToArray();
+        }
         public override string ToString()
         {
             string retn = opcode + " (";
 
-            foreach (Type type in param)
+            foreach (var value in param)
             {
-                retn += Enum.GetName(typeof(Type), type) + ", ";
+                retn += Enum.GetName(typeof(Type), value.type) + ", ";
             }
             retn = retn.Remove(retn.Length - 2);
             if(param.Count>0)

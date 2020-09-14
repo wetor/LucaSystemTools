@@ -1,6 +1,7 @@
 ﻿/*
  LucaSystem引擎.脚本部分
- 目前完美支持Nintendo Switch版本的《Summer Pocket》以及PSVita《ISLAND》脚本反汇编以及汇编（但并不完善）
+ 目前完美支持Nintendo Switch版本的《Summer Pocket》以及PSVita《ISLAND》脚本反汇编以及汇编
+ 2020.9.13 追加Nintendo Switch版本的《Tomoyo After Its a Wonderful Life CS Edition》的完美支持
  Nintendo Switch版本的《Clannad》有待完善
  脚本文件解析
  作者：Wetor
@@ -99,7 +100,7 @@ namespace ProtScript
             }
             return datas.ToArray();
         }
-        private string DecompileCode(byte[] line, bool rec = false)
+        private string DecompileCode(byte[] line)
         {
             if (line.Length == 0) return "";
             MemoryStream ms = new MemoryStream(line);
@@ -108,34 +109,21 @@ namespace ProtScript
             byte scr_index = mbr.ReadByte();
             if (!decompress_dic.ContainsKey(scr_index))
             {
-                switch (game)
-                {
-                    case GameScript.ISLAND:
-                        throw new Exception("未知的opcode！");
-                        break;
-                    case GameScript.SP:
-                    case GameScript.TAWL:
-                        retn = "[" + Byte2Hex(scr_index) + "]";
-                        if (ms.Length - ms.Position > 0)
-                            retn += " " + DecompileCode(mbr.ReadBytes((int)(ms.Length - ms.Position)), true);
-                        break;
-                    default:
-                        break;
-                }
+                throw new Exception("未知的opcode！");
             }
             else
             {
                 string flag = decompress_dic[scr_index].opcode;
                 byte flag2 = mbr.ReadByte();
-                string data = decompress_dic[scr_index].Load(ref mbr);
+                string data = decompress_dic[scr_index].ReadFunc(ref mbr);
                 retn += (data != "" ? " " : "") + data;
                 while (ms.Position + 1 < ms.Length)
                 {
-                    retn += " [" + Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
+                    retn += " [" + ScriptUtil.Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
                 }
                 if (ms.Position < ms.Length)
                 {
-                    retn += " [" + Byte2Hex(mbr.ReadByte()) + "]";
+                    retn += " [" + ScriptUtil.Byte2Hex(mbr.ReadByte()) + "]";
                 }
                 switch (game)
                 {
@@ -145,13 +133,13 @@ namespace ProtScript
                         break;
                     case GameScript.SP:
                     case GameScript.TAWL:
-                        retn = flag + " " + "[" + Byte2Hex(flag2) + "]" + retn;
+                        retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
                         break;
                     default:
                         break;
                 }
             }
-            if (retn != "    " && retn != "" && !rec && Program.debug)
+            if (retn != "    " && retn != "" && Program.debug)
             {
                 Console.WriteLine(retn);
             }
@@ -191,7 +179,6 @@ namespace ProtScript
             int i = 0;
             while(i+4 <= code.Length && code.Substring(i,4) == "    ")
             {
-                mbw.Write((byte)0x00);
                 i += 4;
             }
             int len_pos = (int)ms.Position;
@@ -208,7 +195,7 @@ namespace ProtScript
                     switch (token[0])
                     {
                         case '['://byte
-                            mbw.Write(Hex2Byte(token.Substring(1, token.Length - 2)));
+                            mbw.Write(ScriptUtil.Hex2Byte(token.Substring(1, token.Length - 2)));
                             break;
                         case '('://uint16
                             mbw.Write(BitConverter.GetBytes(Convert.ToUInt16(token.Substring(1, token.Length - 2))));
@@ -216,22 +203,59 @@ namespace ProtScript
                         case '{'://uint32
                             mbw.Write(BitConverter.GetBytes(Convert.ToUInt32(token.Substring(1, token.Length - 2))));
                             break;
-                        case 'u'://unicode string + 00 00
+                        case '$':
+                            {
+                                token = token.Replace(@"{\n}", "\n");
+                                string tmp = token.Substring(3, token.Length - 4);
+                                if (token[1] == 'u') //unicode string + 00 00
+                                {
+                                    mbw.Write(Encoding.Unicode.GetBytes(tmp));
+                                    mbw.Write(new byte[] { 0x00, 0x00 });
+                                }
+                                else if (token[1] == 'j')//sjis string + 00
+                                {
+                                    mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(tmp));
+                                    mbw.Write((byte)0x00);
+                                }
+                                else if (token[1] == '8')//utf8 string + 00
+                                {
+                                    mbw.Write(Encoding.UTF8.GetBytes(tmp));
+                                    mbw.Write((byte)0x00);
+                                }
+                                break;
+                            }
+                        case '&':
+                            {
+                                token = token.Replace(@"{\n}", "\n");
+                                string tmp = token.Substring(3, token.Length - 4);
+                                if (token[1] == 'u') //len + unicode string
+                                {
+                                    mbw.Write(BitConverter.GetBytes((UInt16)tmp.Length));
+                                    mbw.Write(Encoding.Unicode.GetBytes(tmp));
+                                }
+                                else if (token[1] == 'j')//len + sjis string
+                                {
+                                    mbw.Write(BitConverter.GetBytes((UInt16)tmp.Length));
+                                    mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(tmp));
+                                }
+                                break;
+                            }
+                        case 'u': // 兼容保留
                             token = token.Replace(@"{\n}","\n");
                             mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
                             mbw.Write(new byte[] { 0x00, 0x00 });
                             break;
-                        case 'j'://sjis string + 00
+                        case 'j': // 兼容保留
                             token = token.Replace(@"{\n}", "\n");
                             mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
                             mbw.Write((byte)0x00);
                             break;
-                        case 'p'://len + unicode string
+                        case 'p': // 兼容保留
                             token = token.Replace(@"{\n}", "\n");
                             mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
                             mbw.Write(Encoding.Unicode.GetBytes(token.Substring(2, token.Length - 3)));
                             break;
-                        case 's'://len + sjis string
+                        case 's': // 兼容保留
                             token = token.Replace(@"{\n}", "\n");
                             mbw.Write(BitConverter.GetBytes((UInt16)(token.Length - 3)));
                             mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
@@ -283,8 +307,13 @@ namespace ProtScript
                 case GameScript.TAWL:
                     // [length] opcode code
                     // 2byte  1byte
+                    if (len % 2 != 0)
+                    {
+                        mbw.Write((byte)0x00);
+                    }
                     ms.Seek(len_pos, SeekOrigin.Begin);
                     mbw.Write(BitConverter.GetBytes(len));
+                    
                     break;
                 default:
                     break;
@@ -295,7 +324,7 @@ namespace ProtScript
             byte[] retn = ms.ToArray();
             if (retn.Length>0 && Program.debug)
             {
-                Console.WriteLine(ScriptParser.Byte2Hex(retn, true));
+                Console.WriteLine(ScriptUtil.Byte2Hex(retn, true));
             }
             mbw.Close();
             ms.Close();
@@ -334,36 +363,7 @@ namespace ProtScript
                 compress_dic.Add(decompress_dic[(byte)i].opcode, (byte)i);
             }
         }
-        public static byte[] Hex2Byte(string hexString)// 字符串转16进制字节数组
-        {
-            hexString = hexString.Replace(" ", "");
-            if (hexString.Substring(0, 2).ToLower() == "0x")
-                hexString.Remove(0, 2);
-            if ((hexString.Length % 2) != 0)
-                hexString += " ";
-            byte[] returnBytes = new byte[hexString.Length / 2];
-            for (int i = 0; i < returnBytes.Length; i++)
-                returnBytes[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
-            return returnBytes;
-        }
-        public static string Byte2Hex(byte[] bytes, bool space = false, bool head = false)// 字节数组转16进制字符串
-        {
-            string returnStr = "";
-            if (bytes != null)
-            {
-                for (int i = 0; i < bytes.Length; i++)
-                {
-                    returnStr += bytes[i].ToString("X2");
-                    if (space && i < bytes.Length-1) returnStr += " ";
-                }
-            }
-            return (head ? "0x" : "") + returnStr;
-        }
-        public static string Byte2Hex(byte bytes)// 字节数组转16进制字符串
-        {
-            return bytes.ToString("X2");
-        }
-
+        
         public override void FileExport(string name)
         {
             fs = new FileStream(name, FileMode.Open);

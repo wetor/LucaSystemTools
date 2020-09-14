@@ -25,7 +25,17 @@ namespace LucaSystemTools
      * _SCR_LABEL
      * _CGMODE
      * _VOICE_PARAM
+     *
+     * TAWL需要屏蔽的文件
+     * _build_count
+     * _varnum
+     * _varname
+     * _task
+     * _scr_label
+     * _cgmode
+     * _voice_param
      */
+
     class Program
     {
         public static bool debug = false;

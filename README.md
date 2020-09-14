@@ -14,7 +14,7 @@ NS两款游戏脚本相关，看代码就行了~
 
 - 此引擎的pak包解包工具
 
-**CZ0Parser.cs、CZ1Parser.cs、CZ3Parser.cs**
+**CZ0Parser.cs、CZ1Parser.cs、CZ3Parser.cs、CZ4Parser.cs**
 
 - Prototype新游戏好像用的都是这种图片，dat的升级版，CZ1提取和打包完成，CZ3只有提取， 新增CZ4
 
@@ -36,15 +36,17 @@ NS两款游戏脚本相关，看代码就行了~
 
 **ScriptParser.cs**
 
-- ns的《Summer Pocket》以及psv的《ISLAND》脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题（JUMP、GOTO等跳转指令未实际测试）  
+- 脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题（JUMP、GOTO等跳转指令未实际测试）  
 
-- 理论同样适用ns的Clannad，但是opcode不太一样，没继续做适配  
-
-- 编译回原脚本部分，暂不支持自定义编码，可以自行修改，后续会添加  
+***Support Game***
+>- 《Summer Pocket》Nintendo Switch  反编译、编译  
+>- 《Clannad》Nintendo Switch  反编译、编译（Opcode未完善）  
+>- 《Tomoyo After Its a Wonderful Life CS Edition》Nintendo Switch  反编译、编译  
+>- 《ISLAND》Psvita  反编译、编译  
 
 ## 能做什么
 
-- 做NS版的Summer Pocket完整汉化没问题了，NS版的Clannad的话要改下opcode的解释。
+- 做NS版的Summer Pocket 、Tomoyo After Its a Wonderful Life完整汉化没问题了，NS版的Clannad的话要改下opcode的解释。
 
 - psv上和air同期的prototype的游戏，只要文件结构相似，那么图像基本是都能提取的，
 
