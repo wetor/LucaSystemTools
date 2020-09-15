@@ -1,4 +1,4 @@
-﻿/*
+/*
  Prot引擎.字库部分
  info文件解析
  */
@@ -42,126 +42,135 @@ namespace ProtFont
         //时间：2019.1.17
         public void Export(string file)
         {
-                int totallen = (int)fs.Length;
-                fs.Seek(0, SeekOrigin.Begin);
-                byte[] bytes = new byte[2];
-                fs.Read(bytes, 0, 2);
-                int fontsize = BitConverter.ToUInt16(bytes, 0);
-                sb.AppendLine(fontsize.ToString());
-                fs.Read(bytes, 0, 2);
-                int fontsize2 = BitConverter.ToUInt16(bytes, 0);
-                sb.AppendLine(fontsize2.ToString());
+            string name = file;
+            StringBuilder sb = new StringBuilder();
+            var fs = File.OpenRead(name);
+            var fs_ = File.OpenRead(name);
 
-                //有些head有3个2字节 有些是4个
-                //fs.Read(bytes, 0, 2);
-                //int unk1 = BitConverter.ToUInt16(bytes, 0);
-                //sb.AppendLine(unk1.ToString());
+            int totallen = (int) fs.Length;
+            fs.Seek(0, SeekOrigin.Begin);
+            byte[] bytes = new byte[2];
+            fs.Read(bytes, 0, 2);
+            int fontsize = BitConverter.ToUInt16(bytes, 0);
+            sb.AppendLine(fontsize.ToString());
+            fs.Read(bytes, 0, 2);
+            int fontsize2 = BitConverter.ToUInt16(bytes, 0);
+            sb.AppendLine(fontsize2.ToString());
 
-                fs.Read(bytes, 0, 2);
-                int fontcount = BitConverter.ToUInt16(bytes, 0);
-                sb.AppendLine(fontcount.ToString());
+            //有些head有3个2字节 有些是4个
+            //fs.Read(bytes, 0, 2);
+            //int unk1 = BitConverter.ToUInt16(bytes, 0);
+            //sb.AppendLine(unk1.ToString());
 
-         
-                Dictionary<uint, string> listWithUnkown = new Dictionary<uint, string>();//
-                bytes = new byte[3];
-                for (int i = 0; i < fontcount; i++)
+            fs.Read(bytes, 0, 2);
+            int fontcount = BitConverter.ToUInt16(bytes, 0);
+            sb.AppendLine(fontcount.ToString());
+
+
+            Dictionary<uint, string> listWithUnkown = new Dictionary<uint, string>(); //
+            bytes = new byte[3];
+            for (int i = 0; i < fontcount; i++)
+            {
+                fs.Read(bytes, 0, 3);
+                StringBuilder sb1 = new StringBuilder();
+                foreach (var chr in bytes)
                 {
-                    fs.Read(bytes, 0, 3);
-                    StringBuilder sb1 =new StringBuilder();
-                    foreach (var chr in bytes)
-                    {
-                        sb.Append(String.Format("{0:X2}", Convert.ToInt32(chr)));
-                        sb.Append(" ");
-                        sb1.Append(String.Format("{0:X2}", Convert.ToInt32(chr)));
-                        sb1.Append(" ");
-                    }
-                    listWithUnkown.Add((uint)i, sb1.ToString());
-                    sb.Append("\r\n");
+                    sb.Append(String.Format("{0:X2}", Convert.ToInt32(chr)));
+                    sb.Append(" ");
+                    sb1.Append(String.Format("{0:X2}", Convert.ToInt32(chr)));
+                    sb1.Append(" ");
                 }
 
-                int pos = (int)fs.Position;
-                sb.AppendLine("===========");
-                sb.AppendLine("Position:"+pos.ToString());
-                sb.AppendLine("Totallen:"+totallen.ToString());
-                sb.AppendLine("Totallen-Position:" + (totallen-pos).ToString());
-                sb.AppendLine("===========");
-
-                //fs.Seek(pos, SeekOrigin.Begin);
-                Dictionary<uint, string> listStrUnicodeHex = new Dictionary<uint, string>();//
-                Dictionary<uint,string> listStrUnicode= new Dictionary<uint, string>();//
-                Dictionary<uint, string> listSize = new Dictionary<uint, string>();
-
-                //后半部分表示size的
-                int pos2 = (int)fs.Position+256*256*2;
-                fs_.Seek(pos2, SeekOrigin.Begin);
-
-                
-                //前半部分 unicode
-                int countx = 0;
-                int county = 0;
-               
-                bytes = new byte[2];
-                for (int i = 0; i < 256*256 ; i++)
-                {
-                    fs.Read(bytes, 0, 2);
-                    uint index = BitConverter.ToUInt16(bytes, 0);
-
-                    fs_.Read(bytes, 0, 2);
-                    //uint size = BitConverter.ToUInt16(bytes.Reverse().ToArray(), 0);
-                    var bytesSize = BitConverter.ToString(bytes).Replace("-", string.Empty);
-
-                   //unicode
-                    byte[] bytesUnicode = new byte[2] {(byte) countx, (byte) county};
-                    string stringUnicodeHex = BitConverter.ToString(bytesUnicode).Replace("-", string.Empty);
-                    string stringUnicodeStr = Encoding.Unicode.GetString(bytesUnicode);
-                    if (!listStrUnicodeHex.ContainsKey(index))
-                    {
-                        listStrUnicodeHex.Add(index, stringUnicodeHex);
-                        listStrUnicode.Add(index, stringUnicodeStr);
-                        listSize.Add(index, bytesSize);
-                    }
-                    countx++;
-                    if (countx == 256)
-                    {
-                        countx = 0;
-                        county++;
-                    }
-                }
-
-                StringBuilder sb2=new StringBuilder();
-            
-                //未排序
-                sb2.Clear();
-                sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
-                foreach (var keyValuePair in listStrUnicode)
-                {
-                    sb2.AppendLine(keyValuePair.Key.ToString("D4") + "\t" +
-                                   keyValuePair.Value + "\t" +
-                                   listStrUnicodeHex[keyValuePair.Key] + "\t" + 
-                                   listSize[keyValuePair.Key] + "\t" +
-                                   listWithUnkown[keyValuePair.Key]);
-                }
-                File.WriteAllText(name + "_dicStr.txt", sb2.ToString(), Encoding.Unicode);
-                    sb2.Clear();
-               
-
-                //已排序
-                sb2.Clear();
-                sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
-                foreach (var keyValuePair in listStrUnicode.OrderBy(x=>x.Key))
-                {
-                    sb2.AppendLine(keyValuePair.Key.ToString("D4") + "\t" +
-                                   keyValuePair.Value + "\t" +
-                                   listStrUnicodeHex[keyValuePair.Key] + "\t" +
-                                   listSize[keyValuePair.Key] + "\t" +
-                                   listWithUnkown[keyValuePair.Key]);
-                }
-                File.WriteAllText(name+ "_dicStr_sort.txt", sb2.ToString(), Encoding.Unicode);
-                sb2.Clear();
-
+                listWithUnkown.Add((uint) i, sb1.ToString());
+                sb.Append("\r\n");
             }
 
-            File.WriteAllText(name+"_",sb.ToString());
+            int pos = (int) fs.Position;
+            sb.AppendLine("===========");
+            sb.AppendLine("Position:" + pos.ToString());
+            sb.AppendLine("Totallen:" + totallen.ToString());
+            sb.AppendLine("Totallen-Position:" + (totallen - pos).ToString());
+            sb.AppendLine("===========");
+
+            //fs.Seek(pos, SeekOrigin.Begin);
+            Dictionary<uint, string> listStrUnicodeHex = new Dictionary<uint, string>(); //
+            Dictionary<uint, string> listStrUnicode = new Dictionary<uint, string>(); //
+            Dictionary<uint, string> listSize = new Dictionary<uint, string>();
+
+            //后半部分表示size的
+            int pos2 = (int) fs.Position + 256 * 256 * 2;
+            fs_.Seek(pos2, SeekOrigin.Begin);
+
+
+            //前半部分 unicode
+            int countx = 0;
+            int county = 0;
+
+            bytes = new byte[2];
+            for (int i = 0; i < 256 * 256; i++)
+            {
+                fs.Read(bytes, 0, 2);
+                uint index = BitConverter.ToUInt16(bytes, 0);
+
+                fs_.Read(bytes, 0, 2);
+                //uint size = BitConverter.ToUInt16(bytes.Reverse().ToArray(), 0);
+                var bytesSize = BitConverter.ToString(bytes).Replace("-", string.Empty);
+
+                //unicode
+                byte[] bytesUnicode = new byte[2] {(byte) countx, (byte) county};
+                string stringUnicodeHex = BitConverter.ToString(bytesUnicode).Replace("-", string.Empty);
+                string stringUnicodeStr = Encoding.Unicode.GetString(bytesUnicode);
+                if (!listStrUnicodeHex.ContainsKey(index))
+                {
+                    listStrUnicodeHex.Add(index, stringUnicodeHex);
+                    listStrUnicode.Add(index, stringUnicodeStr);
+                    listSize.Add(index, bytesSize);
+                }
+
+                countx++;
+                if (countx == 256)
+                {
+                    countx = 0;
+                    county++;
+                }
+            }
+
+            StringBuilder sb2 = new StringBuilder();
+
+            //未排序
+            sb2.Clear();
+            sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
+            foreach (var keyValuePair in listStrUnicode)
+            {
+                sb2.AppendLine(keyValuePair.Key.ToString("D4") + "\t" +
+                               keyValuePair.Value + "\t" +
+                               listStrUnicodeHex[keyValuePair.Key] + "\t" +
+                               listSize[keyValuePair.Key] + "\t" +
+                               listWithUnkown[keyValuePair.Key]);
+            }
+
+            File.WriteAllText(name + "_dicStr.txt", sb2.ToString(), Encoding.Unicode);
+            sb2.Clear();
+
+
+            //已排序
+            sb2.Clear();
+            sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
+            foreach (var keyValuePair in listStrUnicode.OrderBy(x => x.Key))
+            {
+                sb2.AppendLine(keyValuePair.Key.ToString("D4") + "\t" +
+                               keyValuePair.Value + "\t" +
+                               listStrUnicodeHex[keyValuePair.Key] + "\t" +
+                               listSize[keyValuePair.Key] + "\t" +
+                               listWithUnkown[keyValuePair.Key]);
+            }
+
+            File.WriteAllText(name + "_dicStr_sort.txt", sb2.ToString(), Encoding.Unicode);
+            sb2.Clear();
+
+
+
+            File.WriteAllText(name + "_", sb.ToString());
 
         }
     }
