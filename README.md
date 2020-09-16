@@ -45,14 +45,18 @@ NS两款游戏脚本相关，看代码就行了~
 >- 《Flowers - Shiki》  
 >- 《ISLAND》Psvita  
 
-- 支持添加新的自定义Opcode文件
+- 支持添加新的自定义Opcode文件，不同的游戏opcode、参数列表也不尽相同
 
 ## 能做什么
 
-- 做NS版的Summer Pocket 、Tomoyo After Its a Wonderful Life完整汉化没问题了，NS版的Clannad的话要改下opcode的解释。
+- 做NS版的Summer Pocket 、Tomoyo After Its a Wonderful Life、Flowers - Shiki完整汉化没问题了，NS版的Clannad的话要改下opcode的解释。
+
+- 理论上NS上的几乎所有prototype的游戏都能汉化，不过需要一些操作获取到对应游戏的opcode列表
 
 - psv上和air同期的prototype的游戏，只要文件结构相似，那么图像基本是都能提取的，
 
 - 大体上psv的clannad air rewrite 是一类 ，psv上的 island flowers系列等是一类 ，如遇到同引擎的一些游戏可以参考下
 
 - 支持psv的ISLAND脚本编译与反编译
+
+- 如果对**NS平台，此引擎**的一些游戏支持有问题，可以提交issues反馈
