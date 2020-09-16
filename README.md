@@ -39,10 +39,13 @@ NS两款游戏脚本相关，看代码就行了~
 - 脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题（JUMP、GOTO等跳转指令未实际测试）  
 
 ***Support Game***
->- 《Summer Pocket》Nintendo Switch  反编译、编译  
->- 《Clannad》Nintendo Switch  反编译、编译（Opcode未完善）  
->- 《Tomoyo After Its a Wonderful Life CS Edition》Nintendo Switch  反编译、编译  
->- 《ISLAND》Psvita  反编译、编译  
+>- 《Summer Pocket》Nintendo Switch  
+>- 《Clannad》Nintendo （Opcode未完善）  
+>- 《Tomoyo After Its a Wonderful Life CS Edition》Nintendo Switch  
+>- 《Flowers - Shiki》  
+>- 《ISLAND》Psvita  
+
+- 支持添加新的自定义Opcode文件
 
 ## 能做什么
 

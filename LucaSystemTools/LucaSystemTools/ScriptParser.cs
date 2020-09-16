@@ -23,7 +23,9 @@ namespace ProtScript
         ISLAND,
         SP,
         CL,
-        TAWL
+        TAWL,
+        FLOWERS,
+        CUSTOM
     }
 
     public class ScriptParser:AbstractFileParser
@@ -33,7 +35,7 @@ namespace ProtScript
         private BinaryReader br;
 
 
-        public ScriptParser(GameScript game)
+        public ScriptParser(GameScript game, string custom_game = "")
         {
             this.game = game;
             switch (game)
@@ -47,9 +49,14 @@ namespace ProtScript
                 case GameScript.TAWL:
                     InitDic("TAWL");
                     break;
-                default:
-                    throw new Exception("不支持的游戏类型");
+                case GameScript.FLOWERS:
+                    InitDic("FLOWERS");
                     break;
+                case GameScript.CUSTOM:
+                    InitDic(custom_game);
+                    break;
+                default:
+                    throw new Exception("不支持的游戏类型！");
             }
 
         }
@@ -81,11 +88,8 @@ namespace ProtScript
                     len = data * 2;
                     fs.Seek(-2, SeekOrigin.Current);
                     break;
-                case GameScript.SP:
-                case GameScript.TAWL:
-                    len = br.ReadUInt16() - 2;
-                    break;
                 default:
+                    len = br.ReadUInt16() - 2;
                     break;
             }
             
@@ -131,11 +135,8 @@ namespace ProtScript
                         //len = flag2 * 2
                         retn = flag + retn;
                         break;
-                    case GameScript.SP:
-                    case GameScript.TAWL:
-                        retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
-                        break;
                     default:
+                        retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
                         break;
                 }
             }
@@ -157,7 +158,12 @@ namespace ProtScript
             BinaryWriter obw = new BinaryWriter(ofs);
             while (isr.Peek()>=0)
             {
+                if (Program.debug)
+                {
+                    Console.WriteLine(isr.BaseStream.Position);
+                }
                 obw.Write(CompileCode(isr.ReadLine()));
+
             }
             obw.Close();
             ofs.Close();
@@ -272,13 +278,10 @@ namespace ProtScript
                                         mbw.Write(compress_dic[token]);
                                         mbw.Write(new byte[1]);
                                         break;
-                                    case GameScript.SP:
-                                    case GameScript.TAWL:
+                                    default:
                                         // length [opcode] code
                                         // 2byte  1byte
                                         mbw.Write(compress_dic[token]);
-                                        break;
-                                    default:
                                         break;
                                 }
                             }
@@ -303,8 +306,7 @@ namespace ProtScript
                     ms.Seek(len_pos+1, SeekOrigin.Begin);
                     mbw.Write((byte)(len / 2));
                     break;
-                case GameScript.SP:
-                case GameScript.TAWL:
+                default:
                     // [length] opcode code
                     // 2byte  1byte
                     if (len % 2 != 0)
@@ -314,8 +316,6 @@ namespace ProtScript
                     ms.Seek(len_pos, SeekOrigin.Begin);
                     mbw.Write(BitConverter.GetBytes(len));
                     
-                    break;
-                default:
                     break;
             }
 
