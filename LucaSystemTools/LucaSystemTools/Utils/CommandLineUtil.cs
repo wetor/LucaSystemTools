@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using McMaster.Extensions.CommandLineUtils;
+using ProtFont;
 using ProtImage;
 using ProtPak;
 using ProtScript;
