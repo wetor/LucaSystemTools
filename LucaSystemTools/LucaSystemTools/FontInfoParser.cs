@@ -224,6 +224,7 @@ namespace ProtFont
         /// <param name="name"></param>
         public override void FileImport(string name)
         {
+           
             UInt16[,] listStrUnicodeHex = new UInt16[256, 256];
             string[,] listSize = new string[256, 256];
             for (UInt16 x = 0; x < 256; x++)
@@ -336,7 +337,16 @@ namespace ProtFont
             //fontcount * 3字节
             for (UInt16 i = 0; i < fontcount; i++)
             {
-                ms.Write(listSize2[i], 0, listSize2[i].Length);
+                if (listSize2.ContainsKey(i))
+                {
+                    ms.Write(listSize2[i], 0, listSize2[i].Length);
+                }
+                else
+                {
+                    Console.WriteLine("以00 00 00代替,未填入Index的Size2:" + i);
+                    ms.Write(new byte[3], 0,3);
+                }
+               
             }
 
             //3.unicode 图片顺序映射
