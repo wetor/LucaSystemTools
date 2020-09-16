@@ -279,6 +279,7 @@ namespace ProtFont
                         }
                         else
                         {
+                            listStrUnicodeHex[unicodeHex[0], unicodeHex[1]] = 0;
                             Console.WriteLine("0000空白Unicode,不写入index:" + unicodeHex[0] + "," + unicodeHex[1] + "," + index);
                         }
                      
