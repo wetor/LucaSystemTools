@@ -50,6 +50,9 @@ namespace LucaSystem.Utils
                     case "psb":
                         selclass = new PsbScript();
                         break;
+                    case "info":
+                        selclass = new FontInfoParser();
+                        break;
                     case "scr":
                         if (!string.IsNullOrEmpty(CustomOpcodePath))
                         {
