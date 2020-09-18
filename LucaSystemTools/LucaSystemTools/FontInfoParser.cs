@@ -176,7 +176,7 @@ namespace ProtFont
             File.WriteAllText(name + "_string_utf-8.txt", sb3.ToString(), Encoding.UTF8);
 
             sb2.Clear();
-            sb2.Clear();
+            sb3.Clear();
             sb2.AppendLine($"-totallen={totallen}\t-fontsize={fontsize}\t-fontsize2={fontsize2}\t-unk1={unk1}\t-fontcount={fontcount}");
             sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
             for (uint i=0;i<fontcount;i++)
