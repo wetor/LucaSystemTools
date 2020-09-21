@@ -140,7 +140,8 @@ namespace ProtFont
             }
 
             StringBuilder sb2 = new StringBuilder();
-           
+            StringBuilder sb3 = new StringBuilder();
+
             //未排序
             sb2.Clear();
             sb2.AppendLine($"-totallen={totallen}\t-fontsize={fontsize}\t-fontsize2={fontsize2}\t-unk1={unk1}\t-fontcount={fontcount}");
@@ -152,6 +153,7 @@ namespace ProtFont
                                listStrUnicodeHex[keyValuePair.Key] + "\t" +
                                listSize[keyValuePair.Key] + "\t" +
                                listWithUnkown[keyValuePair.Key]);
+             
             }
 
             File.WriteAllText(name + "_dicStr.txt", sb2.ToString(), Encoding.Unicode);
@@ -169,11 +171,13 @@ namespace ProtFont
                                listStrUnicodeHex[keyValuePair.Key] + "\t" +
                                listSize[keyValuePair.Key] + "\t" +
                                listWithUnkown[keyValuePair.Key]);
+                sb3.Append(keyValuePair.Value);
             }
             File.WriteAllText(name + "_dicStr_sort.txt", sb2.ToString(), Encoding.Unicode);
-
+            File.WriteAllText(name + "_string_utf-8.txt", sb3.ToString(), Encoding.UTF8);
 
             sb2.Clear();
+            sb3.Clear();
             sb2.AppendLine($"-totallen={totallen}\t-fontsize={fontsize}\t-fontsize2={fontsize2}\t-unk1={unk1}\t-fontcount={fontcount}");
             sb2.AppendLine("Index\tString\tUnicode\tSize\tSize2");
             for (uint i=0;i<fontcount;i++)
@@ -198,8 +202,11 @@ namespace ProtFont
                                unicodehex + "\t" +
                                sizehex + "\t" +
                                listWithUnkown[i]);
+
+                sb3.Append(unicodestr);
             }
             File.WriteAllText(name + "_dicStr_sort2.txt", sb2.ToString(), Encoding.Unicode);
+            File.WriteAllText(name + "_string_sort_utf-8.txt", sb3.ToString(), Encoding.UTF8);
             sb2.Clear();
 
             File.WriteAllText(name + "_", sb.ToString());

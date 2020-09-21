@@ -1,4 +1,4 @@
-﻿using AdvancedBinary;
+using AdvancedBinary;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,7 +21,7 @@ namespace ProtPak
         public static void Pack(string file, string name_coding = "UTF-8")
         {
            
-            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
+            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileName(file));
             string in_dir = out_file + "_unpacked"+Path.DirectorySeparatorChar;
             out_file += ".out";
             Stream header = new StreamReader(file).BaseStream;
