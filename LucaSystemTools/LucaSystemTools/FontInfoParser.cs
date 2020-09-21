@@ -10,6 +10,7 @@ using System.Text;
 using System.IO;
 using LucaSystem;
 using System.ComponentModel;
+using ProtScript;
 
 namespace ProtFont
 {
@@ -399,6 +400,75 @@ namespace ProtFont
             }
 
             File.WriteAllBytes(name + ".info", ms.ToArray());
+        }
+
+        public static void dict2infoTxt(string name,string infoTxt)
+        {
+
+
+            var ie0 = File.ReadLines(infoTxt, Encoding.Unicode).GetEnumerator();
+            int linecount = 0;
+            int fontsize = 0;
+            Dictionary<string, string> info = new Dictionary<string, string>();
+            string[] line1 = new string[2];
+            while (ie0.MoveNext())
+            {
+                string line = ie0.Current;
+                if (linecount == 0)
+                {
+                    line1[linecount] = line;
+                    string[] tmp = line.Split('\t');
+                    fontsize = UInt16.Parse(tmp[1].Split('=')[1]);
+                    linecount++;
+                    continue;
+                }
+                if(linecount == 1)
+                {
+                    line1[linecount] = line;
+                    linecount++;
+                    continue;
+                }
+                if (!string.IsNullOrEmpty(line))
+                {
+                    string[] tmp = line.Split('\t');
+                    if (!info.ContainsKey(tmp[2]))
+                    {
+                        info.Add(tmp[2], tmp[4]);
+                    }
+                        
+                }
+                linecount++;
+            }
+            var ie = File.ReadLines(name, Encoding.Unicode).GetEnumerator();
+            
+            string default_size = "00" + ScriptUtil.Byte2Hex(BitConverter.GetBytes((UInt16)fontsize));
+            var sw = new StreamWriter(Path.GetDirectoryName(name)+"/info" + fontsize + "_" + Path.GetFileNameWithoutExtension(name) + ".txt",
+                false, Encoding.Unicode);
+            var sw2 = new StreamWriter(name+"_all.txt");
+            sw.WriteLine(line1[0]);
+            sw.WriteLine(line1[1]);
+            int index = 0;
+            while (ie.MoveNext())
+            {
+                string line = ie.Current;
+                string[] tmp = line.Split('=');
+                string size = default_size;
+                if (info.ContainsKey(tmp[0]))
+                {
+                    size = info[tmp[0]];
+                }
+
+                sw.WriteLine("{0:00000}\t{1}\t{2}\t{3}\t{4}", index, tmp[1], tmp[0], "0000", size);
+                if (tmp[1] == "")
+                    tmp[1] = " ";
+                sw2.Write(tmp[1]);
+
+                index++;
+
+
+            }
+            sw.Close();
+            sw2.Close();
         }
     }
 }

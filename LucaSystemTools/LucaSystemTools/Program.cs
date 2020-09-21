@@ -10,6 +10,8 @@ using ProtScript;
 using ProtPak;
 using ProtImage;
 using RealLive;
+using ProtFont;
+
 namespace LucaSystemTools
 {
     /**

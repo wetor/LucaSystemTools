@@ -135,7 +135,7 @@ CUSTOM          Read custom Opcode file. Path: OPCODE/{CUSTOM}.txt
         [Option(Description = "FileName or FolderName", ShortName = "f")]
         public string FileName { get; set; }
 
-        [Option(Description = "FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [scr]", ShortName = "t")]
+        [Option(Description = "FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]", ShortName = "t")]
         public string FileType { get; set; }
 
         [Option(Description = "ParserMode [import] or [export]", ShortName = "m")]
