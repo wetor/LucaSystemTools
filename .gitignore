@@ -331,5 +331,4 @@ ASALocalRun/
 .vscode/launch.json
 .vscode/tasks.json
 .DS_Store
-/LucaSystemTools/LucaSystemTools/Utils/Lzw2Util.cs
-/LucaSystemTools/LucaSystemTools/CZ2Parser.cs
+

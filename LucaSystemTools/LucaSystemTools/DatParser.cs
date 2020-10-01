@@ -117,7 +117,7 @@ namespace ProtImage
                     lmzBytes.Add(Reader.ReadUInt16());
                 }
                 //解压lzw
-                string str = LzwUtil2.Decompress(lmzBytes);
+                string str = LzwUtil.Decompress2(lmzBytes);
                 foreach (var c in str)
                 {
                     unBytes.Add((byte)c);

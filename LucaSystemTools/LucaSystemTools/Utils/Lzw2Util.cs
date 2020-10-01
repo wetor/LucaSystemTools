@@ -7,18 +7,21 @@ using System.Threading.Tasks;
 namespace LucaSystem
 {
     //from http://rosettacode.org/wiki/LZW_compression#C.23
-    public class LzwUtil
+    public class Lzw2Util
     {
-        //island flower start with 0
-        public static string Decompress(List<int> compressed)
+
+        public static string Decompress(List<UInt16> compressed)
         {
             // build the dictionary
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256; i++) 
+            for (int i = 0; i < 512 + 2; i++)
+            {
                 dictionary.Add(i, ((char)i).ToString());
+            }
+                
 
-            string w = dictionary[0];
-            //compressed.RemoveAt(0);
+            string w = dictionary[compressed[0]];
+            compressed.RemoveAt(0);
             StringBuilder decompressed = new StringBuilder();
 
             foreach (int k in compressed)
@@ -32,9 +35,8 @@ namespace LucaSystem
                 decompressed.Append(entry);
 
                 // new sequence; add it to the dictionary
-
                 dictionary.Add(dictionary.Count, w + entry[0]);
-
+                dictionary.Add(dictionary.Count, dictionary[dictionary.Count]);
                 w = entry;
             }
 
@@ -108,37 +110,5 @@ namespace LucaSystem
 
             return compressed;
         }
-
-        //air cl rewrite start with 256
-        public static string Decompress2(List<int> compressed)
-        {
-            // build the dictionary
-            Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256 + 1; i++)
-                dictionary.Add(i, ((char)i).ToString());
-
-            string w = dictionary[compressed[0]];
-            compressed.RemoveAt(0);
-            StringBuilder decompressed = new StringBuilder(w);
-
-            foreach (int k in compressed)
-            {
-                string entry = null;
-                if (dictionary.ContainsKey(k))
-                    entry = dictionary[k];
-                else if (k == dictionary.Count)
-                    entry = w + w[0];
-
-                decompressed.Append(entry);
-
-                // new sequence; add it to the dictionary
-                dictionary.Add(dictionary.Count, w + entry[0]);
-
-                w = entry;
-            }
-
-            return decompressed.ToString();
-        }
-
     }
 }

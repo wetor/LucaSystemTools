@@ -60,3 +60,17 @@ NS两款游戏脚本相关，看代码就行了~
 - 支持psv的ISLAND脚本编译与反编译
 
 - 如果对**NS平台，此引擎**的一些游戏支持有问题，可以提交issues反馈
+
+## 使用说明
+<pre><code>
+Options:
+  -o|--opcode-path OPCODE_PATH                  Script opcode ,For [scr]
+  -c|--custom-opcode-path CUSTOM_OPCODE_PATH    Script custom opcode ,For [scr]
+  -f|--file-name FILE_NAME                      FileName or FolderName
+  -t|--file-type FILE_TYPE                      FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]
+  -m|--parser-mode PARSER_MODE                 ParserMode [import] or [export]
+  -d|--debug                                    Enable debug mode
+  -l|--game-list                                Show list of supported games
+  -oh|--opcode-help                             Show Opcode help
+  -?|-h|--help                                  Show help information
+</code></pre>
