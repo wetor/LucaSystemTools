@@ -72,5 +72,6 @@ Options:
   -d|--debug                                    Enable debug mode
   -l|--game-list                                Show list of supported games
   -oh|--opcode-help                             Show Opcode help
+  -p|--pak-coding                               Pak filename coding
   -?|-h|--help                                  Show help information
 </code></pre>
