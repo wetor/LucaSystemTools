@@ -27,7 +27,7 @@ namespace ProtPak
         public static void Pack(string file)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileName(file));
+            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
             string in_dir = out_file + "_unpacked"+Path.DirectorySeparatorChar;
             out_file += ".out";
             Stream header = new StreamReader(file).BaseStream;
