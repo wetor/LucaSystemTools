@@ -26,7 +26,7 @@ namespace ProtPak
         //时间：2019.7.25
         public static void Pack(string file)
         {
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+           
             string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileName(file));
             string in_dir = out_file + "_unpacked"+Path.DirectorySeparatorChar;
             out_file += ".out";
