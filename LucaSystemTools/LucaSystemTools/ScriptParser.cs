@@ -25,6 +25,7 @@ namespace ProtScript
         CL,
         TAWL,
         FLOWERS,
+        FLOWERS_PSV,
         CUSTOM
     }
 
@@ -51,6 +52,9 @@ namespace ProtScript
                     break;
                 case GameScript.FLOWERS:
                     InitDic("FLOWERS");
+                    break;
+                case GameScript.FLOWERS_PSV:
+                    InitDic("FLOWERS_PSV");
                     break;
                 case GameScript.CUSTOM:
                     InitDic(custom_game);
@@ -83,6 +87,7 @@ namespace ProtScript
             switch (game)
             {
                 case GameScript.ISLAND:
+                case GameScript.FLOWERS_PSV:
                     byte opcode = br.ReadByte();
                     byte data = br.ReadByte();
                     len = data * 2;
@@ -132,6 +137,7 @@ namespace ProtScript
                 switch (game)
                 {
                     case GameScript.ISLAND:
+                    case GameScript.FLOWERS_PSV:
                         //len = flag2 * 2
                         retn = flag + retn;
                         break;
@@ -272,6 +278,7 @@ namespace ProtScript
                                 switch (game)
                                 {
                                     case GameScript.ISLAND:
+                                    case GameScript.FLOWERS_PSV:
                                         // [opcode] length/2 code
                                         // 1byte  1byte
                                         ms.Seek(len_pos, SeekOrigin.Begin);
@@ -301,6 +308,7 @@ namespace ProtScript
             switch (game)
             {
                 case GameScript.ISLAND:
+                case GameScript.FLOWERS_PSV:
                     // opcode [length/2] code
                     // 1byte  1byte
                     ms.Seek(len_pos+1, SeekOrigin.Begin);
