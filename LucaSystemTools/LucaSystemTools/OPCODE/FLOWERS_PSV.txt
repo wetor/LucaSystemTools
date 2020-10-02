@@ -1,4 +1,5 @@
-﻿EQU
+﻿;Ver2
+EQU
 EQUN
 EQUV
 ADD

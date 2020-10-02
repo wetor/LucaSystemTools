@@ -1,3 +1,5 @@
+;Ver2
+;PSV版多为Ver2版本
 EQU(UInt16,UInt16,StringSJIS)  ;相等
 EQUN
 EQUV

@@ -1,4 +1,5 @@
-﻿EQU    (UInt16, UInt16, StringSJIS)
+﻿;Ver3
+EQU    (UInt16, UInt16, StringSJIS)
 EQUN
 EQUV
 ADD
