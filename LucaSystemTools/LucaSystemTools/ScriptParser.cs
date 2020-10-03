@@ -390,8 +390,8 @@ namespace ProtScript
 
         public override void FileImport(string name)
         {
-            fs = new FileStream(name, FileMode.Open);
-            br = new BinaryReader(fs);
+            //fs = new FileStream(name, FileMode.Open);
+            //br = new BinaryReader(fs);
             Compile(name);
         }
     }
