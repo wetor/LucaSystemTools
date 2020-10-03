@@ -16,17 +16,23 @@ namespace ProtPak
     //https://github.com/marcussacana/LucaSystem
     public class PAKManager:AbstractFileParser
     {
+        public static string coding = "UTF-8";
+        // UTF-8 or Shift-JIS
+        public PAKManager(string coding = "UTF-8")
+        {
+            PAKManager.coding = coding;
+        }
         //作者：Wetor
         //时间：2019.7.25
-        public static void Pack(string file, string name_coding = "UTF-8")
+        public static void Pack(string file)
         {
-           
-            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileName(file));
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            string out_file = Path.Combine(Path.GetDirectoryName(file), Path.GetFileNameWithoutExtension(file));
             string in_dir = out_file + "_unpacked"+Path.DirectorySeparatorChar;
             out_file += ".out";
             Stream header = new StreamReader(file).BaseStream;
             PAKHeader pak_header = new PAKHeader();
-            StructReader Reader = new StructReader(header, Encoding: Encoding.GetEncoding(name_coding));
+            StructReader Reader = new StructReader(header, Encoding: Encoding.GetEncoding(coding));
             Reader.ReadStruct(ref pak_header);
 
             BinaryWriter bw = new BinaryWriter(File.Open(out_file,FileMode.Create));
@@ -57,7 +63,7 @@ namespace ProtPak
                         strArr.Add(tmp);
                         tmp = Reader.ReadByte();
                     }
-                    Names[i] = Encoding.GetEncoding(name_coding).GetString(strArr.ToArray());
+                    Names[i] = Encoding.GetEncoding(coding).GetString(strArr.ToArray());
                     int ID = 1;
                     for(int j = 0; j < i; j++)
                     {
@@ -108,12 +114,12 @@ namespace ProtPak
         }
         //作者：Wetor
         //时间：2019.7.25
-        public static void Unpack(string file,string name_coding = "UTF-8")
+        public static void Unpack(string file)
         {
             string OutDir = file + "_unpacked"+Path.DirectorySeparatorChar;
             Stream Packget = new StreamReader(file).BaseStream;
             uint header_len;
-            var Files = Unpack(Packget, out header_len, name_coding);
+            var Files = Unpack(Packget, out header_len);
             FileStream fs = new FileStream(file + ".pakhead", FileMode.Create);
             Packget.Seek(0, SeekOrigin.Begin);
             byte[] head = new byte[header_len];
@@ -141,8 +147,9 @@ namespace ProtPak
             fs.Close();
             Packget.Close();
         }
-        public static Entry[] Unpack(Stream Packget, out uint data_pos , string coding = "UTF-8")
+        public static Entry[] Unpack(Stream Packget, out uint data_pos)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             var Files = new Entry[0];
             PAKHeader Header = new PAKHeader();
             StructReader Reader = new StructReader(Packget, Encoding: Encoding.GetEncoding(coding));

@@ -49,7 +49,14 @@ namespace LucaSystem.Utils
                         selclass = new DatParser();
                         break;
                     case "pak":
-                        selclass = new PAKManager();
+                        if (!string.IsNullOrEmpty(PakCoding)){
+                            selclass = new PAKManager(PakCoding);
+                        }
+                        else
+                        {
+                            selclass = new PAKManager();
+                        }
+                            
                         break;
                     case "psb":
                         selclass = new PsbScript();
@@ -128,6 +135,9 @@ CUSTOM          Read custom Opcode file. Path: OPCODE/{CUSTOM}.txt
             }
 
         }
+
+        [Option(Description = "Pakfile name coding ,For [pak]", ShortName = "p")]
+        public string PakCoding { get; set; }
 
         [Option(Description = "Script opcode ,For [scr]", ShortName = "o")]
         public string OpcodePath { get; set; }

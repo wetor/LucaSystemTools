@@ -21,11 +21,12 @@ namespace ProtScript
     public enum GameScript
     {
         ISLAND,
+        FLOWERS_PSV,
         SP,
         CL,
         TAWL,
         FLOWERS,
-        CUSTOM
+        CUSTOM,
     }
 
     public class ScriptParser:AbstractFileParser
@@ -33,6 +34,7 @@ namespace ProtScript
         private GameScript game;
         private FileStream fs;
         private BinaryReader br;
+        private int ScriptVersion = 3;
 
 
         public ScriptParser(GameScript game, string custom_game = "")
@@ -42,6 +44,11 @@ namespace ProtScript
             {
                 case GameScript.ISLAND:
                     InitDic("ISLAND");
+                    ScriptVersion = 2;
+                    break;
+                case GameScript.FLOWERS_PSV:
+                    InitDic("FLOWERS_PSV");
+                    ScriptVersion = 2;
                     break;
                 case GameScript.SP:
                     InitDic("SP");
@@ -80,17 +87,16 @@ namespace ProtScript
             if (!CanRead()) return new byte[0];
             List<byte> datas = new List<byte>();
             int len = 0;
-            switch (game)
+            if(ScriptVersion == 2)
             {
-                case GameScript.ISLAND:
-                    byte opcode = br.ReadByte();
-                    byte data = br.ReadByte();
-                    len = data * 2;
-                    fs.Seek(-2, SeekOrigin.Current);
-                    break;
-                default:
-                    len = br.ReadUInt16() - 2;
-                    break;
+                byte opcode = br.ReadByte();
+                byte data = br.ReadByte();
+                len = data * 2;
+                fs.Seek(-2, SeekOrigin.Current);
+            }
+            else if(ScriptVersion == 3)
+            {
+                len = br.ReadUInt16() - 2;
             }
             
             if (Program.debug)
@@ -129,15 +135,14 @@ namespace ProtScript
                 {
                     retn += " [" + ScriptUtil.Byte2Hex(mbr.ReadByte()) + "]";
                 }
-                switch (game)
+                if (ScriptVersion == 2)
                 {
-                    case GameScript.ISLAND:
-                        //len = flag2 * 2
-                        retn = flag + retn;
-                        break;
-                    default:
-                        retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
-                        break;
+                    //len = flag2 * 2
+                    retn = flag + retn;
+                }
+                else if (ScriptVersion == 3)
+                {
+                    retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
                 }
             }
             if (retn != "    " && retn != "" && Program.debug)
@@ -269,20 +274,19 @@ namespace ProtScript
                         default:
                             if (token[0] >= 'A' && token[0] <= 'Z' && compress_dic.ContainsKey(token))
                             {
-                                switch (game)
+                                if (ScriptVersion == 2)
                                 {
-                                    case GameScript.ISLAND:
-                                        // [opcode] length/2 code
-                                        // 1byte  1byte
-                                        ms.Seek(len_pos, SeekOrigin.Begin);
-                                        mbw.Write(compress_dic[token]);
-                                        mbw.Write(new byte[1]);
-                                        break;
-                                    default:
-                                        // length [opcode] code
-                                        // 2byte  1byte
-                                        mbw.Write(compress_dic[token]);
-                                        break;
+                                    // [opcode] length/2 code
+                                    // 1byte  1byte
+                                    ms.Seek(len_pos, SeekOrigin.Begin);
+                                    mbw.Write(compress_dic[token]);
+                                    mbw.Write(new byte[1]);
+                                }
+                                else if (ScriptVersion == 3)
+                                {
+                                    // length [opcode] code
+                                    // 2byte  1byte
+                                    mbw.Write(compress_dic[token]);
                                 }
                             }
                             else
@@ -298,28 +302,24 @@ namespace ProtScript
 
             }
             UInt16 len = (UInt16)(ms.Position - len_pos);
-            switch (game)
+            if (ScriptVersion == 2)
             {
-                case GameScript.ISLAND:
-                    // opcode [length/2] code
-                    // 1byte  1byte
-                    ms.Seek(len_pos+1, SeekOrigin.Begin);
-                    mbw.Write((byte)(len / 2));
-                    break;
-                default:
-                    // [length] opcode code
-                    // 2byte  1byte
-                    if (len % 2 != 0)
-                    {
-                        mbw.Write((byte)0x00);
-                    }
-                    ms.Seek(len_pos, SeekOrigin.Begin);
-                    mbw.Write(BitConverter.GetBytes(len));
-                    
-                    break;
+                // opcode [length/2] code
+                // 1byte  1byte
+                ms.Seek(len_pos + 1, SeekOrigin.Begin);
+                mbw.Write((byte)(len / 2));
             }
-
-            
+            else if (ScriptVersion == 3)
+            {
+                // [length] opcode code
+                // 2byte  1byte
+                if (len % 2 != 0)
+                {
+                    mbw.Write((byte)0x00);
+                }
+                ms.Seek(len_pos, SeekOrigin.Begin);
+                mbw.Write(BitConverter.GetBytes(len));
+            }
 
             byte[] retn = ms.ToArray();
             if (retn.Length>0 && Program.debug)
@@ -357,10 +357,27 @@ namespace ProtScript
             }
             decompress_dic.Clear();
             compress_dic.Clear();
-            for (int i = 0; i < dic.Length; i++)
+            if (dic.Length > 0)
             {
-                decompress_dic.Add((byte)i, new ScriptOpcode((byte)i,dic[i].Replace("\r", "")));
+                if(dic[0].Trim() == ";Ver3")
+                {
+                    ScriptVersion = 3;
+                }
+                else if(dic[0].Trim() == ";Ver2")
+                {
+                    ScriptVersion = 2;
+                }
+            }
+            int i = 0;
+            foreach(string line in dic)
+            {
+                if (line.TrimStart()[0] == ';')
+                {
+                    continue;
+                }
+                decompress_dic.Add((byte)i, new ScriptOpcode((byte)i, line.Replace("\r", "")));
                 compress_dic.Add(decompress_dic[(byte)i].opcode, (byte)i);
+                i++;
             }
         }
         
