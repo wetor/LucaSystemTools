@@ -14,14 +14,14 @@ VARSTR    (UInt16, UInt16, UInt16, StringUnicode)
 VARSTR_ADD
 SET
 FLAGCLR
-GOTO    (UInt16, UInt16)
+GOTO    (UInt16, !Position)
 ONGOTO
 GOSUB
-IFY    (UInt16, StringSJIS, UInt32)
-IFN    (UInt16, StringSJIS, UInt32)
+IFY    (UInt16, StringSJIS, Position)
+IFN    (UInt16, StringSJIS, Position)
 RETURN
-JUMP    (UInt16, StringSJIS)
-FARCALL
+JUMP    (StringSJIS, Position)
+FARCALL (UInt16,StringSJIS)
 FARRETURN
 JUMPPOINT
 END

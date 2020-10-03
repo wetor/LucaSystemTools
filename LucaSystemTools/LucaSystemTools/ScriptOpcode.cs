@@ -25,6 +25,7 @@ namespace ProtScript
         StringUTF8,
         LenStringUnicode,
         LenStringSJIS,
+        Position,
         Opcode,
         Skip
     }
@@ -41,6 +42,8 @@ namespace ProtScript
     }
     public class ScriptOpcode
     {
+        public static Dictionary<uint, int> code_position = new Dictionary<uint, int>();
+
         public string opcode = "UNKNOW";
         public string comment = "";//注释说明
         public byte opcode_byte = 127;
@@ -176,7 +179,7 @@ namespace ProtScript
                             break;
                         }
                     case Type.UInt16:
-                        if (value.nullable && curr_pos + 2 >= tbr_len)
+                        if (value.nullable && curr_pos + 2 > tbr_len)
                         {
                             nullable_skip = true;
                             break;
@@ -184,7 +187,7 @@ namespace ProtScript
                         tmp = "(" + tbr.ReadUInt16().ToString() + ")";
                         break;
                     case Type.UInt32:
-                        if (value.nullable && curr_pos + 4 >= tbr_len)
+                        if (value.nullable && curr_pos + 4 > tbr_len)
                         {
                             nullable_skip = true;
                             break;
@@ -212,7 +215,7 @@ namespace ProtScript
                     case Type.LenStringUnicode:
                     case Type.LenStringSJIS:
                         {
-                            if (value.nullable && curr_pos + 2 >= tbr_len)
+                            if (value.nullable && curr_pos + 2 > tbr_len)
                             {
                                 nullable_skip = true;
                                 break;
@@ -228,6 +231,23 @@ namespace ProtScript
                             }
                             break;
                         }
+                    case Type.Position:
+                        if (value.nullable && curr_pos + 4 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        uint pos = tbr.ReadUInt32();
+                        if (code_position.ContainsKey(pos))
+                        {
+                            tmp = "<" + code_position[pos] + ">";
+                        }
+                        else
+                        {
+                            throw new Exception("错误的跳转位置: " + pos + "！");
+                        }
+
+                        break;
                     case Type.Opcode:
                         byte scr_index = tbr.ReadByte();
                         if(scr_index == opcode_byte)

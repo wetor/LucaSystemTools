@@ -36,10 +36,25 @@ namespace ProtScript
         private BinaryReader br;
         private int ScriptVersion = 3;
 
+        private List<byte[]> code_bytes;
+        // 文件位置，行号（1开始）
+        private Dictionary<uint, int> code_position;
+
+        // 行对应的位置
+        private List<uint> line_position;
+        // 位置，要跳转的行号（1开始）
+        private Dictionary<uint, int> goto_position;
 
         public ScriptParser(GameScript game, string custom_game = "")
         {
             this.game = game;
+            // Decompile
+            code_bytes = new List<byte[]>();
+            code_position = new Dictionary<uint, int>();
+
+            // Compile
+            goto_position = new Dictionary<uint, int>();
+            line_position = new List<uint>();
             switch (game)
             {
                 case GameScript.ISLAND:
@@ -70,15 +85,28 @@ namespace ProtScript
         public void Decompile(string path)
         {
             if (!CanRead()) return;
+            code_bytes.Clear();
+            code_position.Clear();
             FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
             StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
             while (fs.Position < fs.Length)
             {
+                code_position.Add((uint)fs.Position, code_bytes.Count + 1);
                 byte[] tmp = ReadCodeBytes();
-                tsw.WriteLine(DecompileCode(tmp));
+                code_bytes.Add(tmp);
+                //tsw.WriteLine(DecompileCode(tmp));
             }
+            DecompileAllCode(ref tsw);
             tsw.Close();
             tfs.Close();
+        }
+        private void DecompileAllCode(ref StreamWriter tsw)
+        {
+            ScriptOpcode.code_position = code_position;
+            foreach (byte[] bytes in code_bytes)
+            {
+                tsw.WriteLine(DecompileCode(bytes));
+            }
         }
         private byte[] ReadCodeBytes()
         {
@@ -158,30 +186,41 @@ namespace ProtScript
         {
             FileStream ifs = new FileStream(path, FileMode.Open);
             StreamReader isr = new StreamReader(ifs);
-
             FileStream ofs = new FileStream(path + ".scr", FileMode.Create);
             BinaryWriter obw = new BinaryWriter(ofs);
+            goto_position.Clear();
+            line_position.Clear();
             while (isr.Peek()>=0)
             {
                 if (Program.debug)
                 {
                     Console.WriteLine(isr.BaseStream.Position);
                 }
-                obw.Write(CompileCode(isr.ReadLine()));
-
+                line_position.Add((uint)ofs.Position);
+                obw.Write(CompileCode(isr.ReadLine(), ofs.Position));
             }
+            CompileFixGoto(ref obw);
             obw.Close();
             ofs.Close();
             isr.Close();
             ifs.Close();
 
         }
+
+        private void CompileFixGoto(ref BinaryWriter obw)
+        {
+            foreach (KeyValuePair<uint, int> kvp in goto_position)
+            {
+                obw.BaseStream.Seek(kvp.Key, SeekOrigin.Begin);
+                obw.Write(BitConverter.GetBytes(line_position[kvp.Value - 1]));
+            }
+        }
         private bool CanRead()
         {
             return fs.CanRead && fs.Position < fs.Length;
         }
 
-        private byte[] CompileCode(string code)
+        private byte[] CompileCode(string code, long position)
         {
             code += " ";
             MemoryStream ms = new MemoryStream();
@@ -205,6 +244,11 @@ namespace ProtScript
 
                     switch (token[0])
                     {
+                        case '<':
+                            int goto_line = Convert.ToInt32(token.Substring(1, token.Length - 2));
+                            goto_position.Add((uint)(position + ms.Position), goto_line);
+                            mbw.Write(BitConverter.GetBytes((uint)0));
+                            break;
                         case '['://byte
                             mbw.Write(ScriptUtil.Hex2Byte(token.Substring(1, token.Length - 2)));
                             break;
