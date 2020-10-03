@@ -156,7 +156,7 @@ namespace ProtScript
 
         public void Compile(string path)
         {
-            FileStream ifs = new FileStream(path + ".txt", FileMode.Open);
+            FileStream ifs = new FileStream(path, FileMode.Open);
             StreamReader isr = new StreamReader(ifs);
 
             FileStream ofs = new FileStream(path + ".scr", FileMode.Create);
