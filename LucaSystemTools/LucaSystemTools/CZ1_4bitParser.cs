@@ -113,7 +113,6 @@ namespace ProtImage
                     i++;
                 }
             }
-            File.WriteAllBytes("a.bin", queue.ToArray());
 
             byte[] bytes2 = new byte[Picture.Height * Picture.Width/2];
            
@@ -124,7 +123,6 @@ namespace ProtImage
                 var b =  (uint)(high4bit << 4)+ (uint)low4bit;
                 bytes2[j] = (byte)b;
             }
-            File.WriteAllBytes("b.bin", bytes2.ToArray());
             //foreach (var b in bytes2)
             //{
             //    int low4bit = b & 0x0F;
