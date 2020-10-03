@@ -33,6 +33,9 @@ namespace LucaSystem.Utils
                     case "cz1":
                         selclass = new CZ1Parser();
                         break;
+                    case "cz1_4bit":
+                        selclass = new CZ1_4bitParser();
+                        break;
                     case "cz2":
                         selclass = new CZ2Parser();
                         break;

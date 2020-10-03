@@ -12,7 +12,7 @@ namespace ProtImage
 {
     public class CZ1Parser : CZParserBase
     {
-        private Bitmap Export(byte[] Texture)
+        public Bitmap Export(byte[] Texture)
         {
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ1Header Header = new CZ1Header();
