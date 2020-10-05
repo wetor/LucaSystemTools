@@ -80,6 +80,11 @@ namespace LucaSystem.Utils
                         {
                             throw new Exception("Need Input OpcodePath or CustomOpcodePath!");
                         }
+
+                        if (!string.IsNullOrEmpty(TBLFile))
+                        {
+                            CustomEncoding.LoadTbl(TBLFile);
+                        }
                         break;
                     default:
                         break;
@@ -161,6 +166,9 @@ CUSTOM          Read custom Opcode file. Path: OPCODE/{CUSTOM}.txt
         public bool GameList { get; set; }
         [Option("-oh|--opcode-help", "Show Opcode help", CommandOptionType.NoValue)]
         public bool OpcodeHelp { get; set; }
+
+        [Option(Description = "TBL filename", ShortName = "tbl")]
+        public string TBLFile { get; set; }
 
     }
 }

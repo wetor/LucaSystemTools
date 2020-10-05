@@ -1,6 +1,6 @@
 ﻿;Ver3
-EQU    (UInt16, UInt16, StringSJIS)
-EQUN
+EQU    (UInt16, StringSJIS)
+EQUN (UInt16, !UInt16)
 EQUV
 ADD
 SUB
@@ -14,11 +14,11 @@ VARSTR    (UInt16, UInt16, UInt16, StringUnicode)
 VARSTR_ADD
 SET
 FLAGCLR
-GOTO    (UInt16, !Position)
+GOTO    (!Position)
 ONGOTO
 GOSUB
-IFY    (UInt16, StringSJIS, Position)
-IFN    (UInt16, StringSJIS, Position)
+IFY    (StringSJIS, Position)
+IFN    (StringSJIS, Position)
 RETURN
 JUMP    (StringSJIS, Position)
 FARCALL (UInt16,StringSJIS)
@@ -33,12 +33,12 @@ COLORBG_SET
 SPLINE_SET
 SHAKELIST_SET
 SCISSOR_TRIANGLELIST_SET
-MESSAGE  (UInt16, UInt16, UInt16, LenStringUnicode)
+MESSAGE  (LenStringUnicode)
 MESSAGE_CLEAR
 MESSAGE_WAIT
-SELECT  (UInt16, UInt16, UInt16, UInt16, UInt16, LenStringUnicode)
+SELECT  (UInt16, UInt16, UInt16, UInt16, LenStringUnicode)
 CLOSE_WINDOW
-LOG  (Byte, UInt16, UInt16, UInt16, LenStringUnicode)
+LOG  (Byte, LenStringUnicode)
 LOG_PAUSE
 LOG_END
 VOICE
@@ -46,12 +46,12 @@ WAIT_COUNT
 WAIT_TIME
 WAIT_TEXTFEED
 FFSTOP
-INIT
+INIT  (UInt16)
 STOP
-IMAGELOAD
+IMAGELOAD (UInt16, UInt16, !UInt16)
 IMAGEUPADTE
 ARC
-MOVE
+MOVE (UInt16, UInt16, UInt16, UInt16)
 MOVE2
 ROT
 PEND
@@ -65,8 +65,8 @@ MCARC
 MCROT
 MCSHAKE
 MCFADE
-WAIT
-DRAW
+WAIT (!UInt16)
+DRAW  (!UInt16)
 WIPE
 FRAMEON
 FRAMEOFF

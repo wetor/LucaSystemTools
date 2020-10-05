@@ -152,9 +152,13 @@ namespace ProtScript
             else
             {
                 string flag = decompress_dic[scr_index].opcode;
-                byte flag2 = mbr.ReadByte();
-                string data = decompress_dic[scr_index].ReadFunc(ref mbr);
-                retn += (data != "" ? " " : "") + data;
+                int param_num = mbr.ReadByte();
+                byte[] param_data = mbr.ReadBytes(param_num * 2);
+
+                string data = ScriptOpcode.ParamDataToString(decompress_dic[scr_index].ReadFunc(ref mbr));
+                retn = (data.Length > 0 ? " " : "") + data;
+
+
                 while (ms.Position + 1 < ms.Length)
                 {
                     retn += " [" + ScriptUtil.Byte2Hex(BitConverter.GetBytes(mbr.ReadUInt16())) + "]";
@@ -170,7 +174,19 @@ namespace ProtScript
                 }
                 else if (ScriptVersion == 3)
                 {
-                    retn = flag + " " + "[" + ScriptUtil.Byte2Hex(flag2) + "]" + retn;
+                    param_num = param_data.Length / 2 < param_num ? param_data.Length / 2 : param_num;
+                    string tmp = "(";
+                    for(int i = 0; i < param_num; i++)
+                    {
+                        tmp += BitConverter.ToUInt16(param_data, i * 2).ToString();
+                        if(i != param_num - 1)
+                        {
+                            tmp += ",";
+                        }
+                    }
+                    tmp += ")";
+
+                    retn = flag + tmp + retn;
                 }
             }
             if (retn != "    " && retn != "" && Program.debug)
@@ -277,6 +293,11 @@ namespace ProtScript
                                     mbw.Write(Encoding.UTF8.GetBytes(tmp));
                                     mbw.Write((byte)0x00);
                                 }
+                                else if (token[1] == 'c')//custom string + 00
+                                {
+                                    mbw.Write(CustomEncoding.GetBytes(tmp));
+                                    mbw.Write((byte)0x00);
+                                }
                                 break;
                             }
                         case '&':
@@ -292,6 +313,11 @@ namespace ProtScript
                                 {
                                     mbw.Write(BitConverter.GetBytes((UInt16)tmp.Length));
                                     mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(tmp));
+                                }
+                                else if (token[1] == 'c')//custom string + 00
+                                {
+                                    mbw.Write(BitConverter.GetBytes((UInt16)tmp.Length));
+                                    mbw.Write(CustomEncoding.GetBytes(tmp));
                                 }
                                 break;
                             }
@@ -316,9 +342,9 @@ namespace ProtScript
                             mbw.Write(Encoding.GetEncoding("Shift-Jis").GetBytes(token.Substring(2, token.Length - 3)));
                             break;
                         default:
-                            if (token[0] >= 'A' && token[0] <= 'Z' && compress_dic.ContainsKey(token))
+                            if (token[0] >= 'A' && token[0] <= 'Z')
                             {
-                                if (ScriptVersion == 2)
+                                if (ScriptVersion == 2 && compress_dic.ContainsKey(token))
                                 {
                                     // [opcode] length/2 code
                                     // 1byte  1byte
@@ -328,9 +354,36 @@ namespace ProtScript
                                 }
                                 else if (ScriptVersion == 3)
                                 {
-                                    // length [opcode] code
-                                    // 2byte  1byte
-                                    mbw.Write(compress_dic[token]);
+                                    int index_info = token.IndexOf('(');
+                                    string info = "";
+                                    if (index_info > 0)
+                                    {
+                                        info = token.Substring(index_info);
+                                        token = token.Substring(0, index_info);
+                                    }
+                                    if (compress_dic.ContainsKey(token))
+                                    {
+                                        // length [opcode] code
+                                        // 2byte  1byte
+                                        mbw.Write(compress_dic[token]);
+                                    }
+                                    if (index_info > 0)
+                                    {
+                                        if (info.Length > 2) 
+                                        {
+                                            string[] info_split = info.Substring(1, info.Length - 2).Split(',');
+                                            mbw.Write((byte)info_split.Length);
+                                            foreach (string str1 in info_split)
+                                            {
+                                                mbw.Write(BitConverter.GetBytes(Convert.ToUInt16(str1)));
+                                            }
+                                        }
+                                        else
+                                        {
+                                            mbw.Write((byte)0);
+                                        }
+                                        
+                                    }
                                 }
                             }
                             else

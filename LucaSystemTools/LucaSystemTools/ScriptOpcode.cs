@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace ProtScript
@@ -19,27 +20,29 @@ namespace ProtScript
         Byte3,
         Byte4,
         UInt16,
+        Int16,
         UInt32,
+        Int32,
         StringUnicode,
         StringSJIS,
         StringUTF8,
         LenStringUnicode,
         LenStringSJIS,
-        Position,
-        Opcode,
-        Skip
+        Position
     }
-    public struct Param
+    public struct ParamType
     {
         public Type type;
         public bool nullable;
-        public Param(Type _type, bool _nullable)
+        public ParamType(Type _type, bool _nullable)
         {
             type = _type;
             nullable = _nullable;
         }
 
     }
+    
+
     public class ScriptOpcode
     {
         public static Dictionary<uint, int> code_position = new Dictionary<uint, int>();
@@ -47,7 +50,7 @@ namespace ProtScript
         public string opcode = "UNKNOW";
         public string comment = "";//注释说明
         public byte opcode_byte = 127;
-        private List<Param> param = new List<Param>();
+        public List<ParamType> param = new List<ParamType>();
 
         public ScriptOpcode(byte opcode_byte, string text)
         {
@@ -55,28 +58,28 @@ namespace ProtScript
             param = InitParams(text, ref opcode, ref comment);
             //Console.WriteLine(ToString());
         }
-        public ScriptOpcode(byte opcode_byte, string opcode, params Param[] values)
+        public ScriptOpcode(byte opcode_byte, string opcode, params ParamType[] values)
         {
             this.opcode_byte = opcode_byte;
             this.opcode = opcode;
             param.AddRange(values);
         }
-        public string ReadFunc(byte[] bytes)
+        public ParamData[] ReadFunc(byte[] bytes)
         {
             MemoryStream ms = new MemoryStream(bytes);
             BinaryReader mbr = new BinaryReader(ms);
-            string retn = ReadFunc(ref mbr, opcode, opcode_byte, param);
+            ParamData[] retn = ReadFunc(ref mbr, opcode, opcode_byte, param);
             mbr.Close();
             ms.Close();
             return retn;
         }
-        public string ReadFunc(ref BinaryReader tbr)
+        public ParamData[] ReadFunc(ref BinaryReader tbr)
         {
             return ReadFunc(ref tbr, opcode, opcode_byte, param);
         }
-        public static List<Param> InitParams(string text, ref string opcode, ref string comment)
+        public static List<ParamType> InitParams(string text, ref string opcode, ref string comment)
         {
-            List<Param> param = new List<Param>();
+            List<ParamType> param = new List<ParamType>();
             if (text == "")
                 return param;
             string tmp = "";
@@ -101,7 +104,7 @@ namespace ProtScript
                     case ',':
                         if (is_param && tmp != "")
                         {
-                            param.Add(new Param((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                            param.Add(new ParamType((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
                             flag_nullable = false;
                         }
                         else
@@ -115,7 +118,7 @@ namespace ProtScript
                         if (is_param)
                         {
                             if (tmp != "")
-                                param.Add(new Param((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                                param.Add(new ParamType((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
                             flag_nullable = false;
                             is_param = false;
                         }
@@ -151,22 +154,20 @@ namespace ProtScript
             }
             return param;
         }
-        public static string ReadFunc(ref BinaryReader tbr, string opcode, byte opcode_byte, List<Param> param)
+        public static ParamData[] ReadFunc(ref BinaryReader tbr, string opcode, byte opcode_byte, List<ParamType> param)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            bool skip = false;
-            string retn = "";
-            string tmp = "";
+            List<string> retn = new List<string>();
+            List<ParamData> datas = new List<ParamData>();
             int count = 0;
             int curr_pos = (int)tbr.BaseStream.Position;
             int tbr_len = (int)tbr.BaseStream.Length;
             bool nullable_skip = false;
+            string data_str;
             foreach (var value in param)
             {
                 Type type = value.type;
                 count++;
-                skip = false;
-                tmp = "";
                 curr_pos = (int)tbr.BaseStream.Position;
                 switch (type)
                 {
@@ -175,7 +176,9 @@ namespace ProtScript
                     case Type.Byte3:
                     case Type.Byte4:
                         {
-                            tmp = "[" + ScriptUtil.Byte2Hex(tbr.ReadBytes((int)type + 1)) + "]";
+                            var data_bytes = tbr.ReadBytes((int)type + 1);
+                            data_str = ScriptUtil.Byte2Hex(data_bytes);
+                            datas.Add(new ParamData(type, data_bytes, data_str));
                             break;
                         }
                     case Type.UInt16:
@@ -184,7 +187,19 @@ namespace ProtScript
                             nullable_skip = true;
                             break;
                         }
-                        tmp = "(" + tbr.ReadUInt16().ToString() + ")";
+                        var data_uint16 = tbr.ReadUInt16();
+                        data_str = data_uint16.ToString();
+                        datas.Add(new ParamData(Type.UInt16, data_uint16, data_str));
+                        break;
+                    case Type.Int16:
+                        if (value.nullable && curr_pos + 2 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_int16 = tbr.ReadInt16();
+                        data_str = data_int16.ToString();
+                        datas.Add(new ParamData(Type.Int16, data_int16, data_str));
                         break;
                     case Type.UInt32:
                         if (value.nullable && curr_pos + 4 > tbr_len)
@@ -192,7 +207,19 @@ namespace ProtScript
                             nullable_skip = true;
                             break;
                         }
-                        tmp = "{" + tbr.ReadUInt32().ToString() + "}";
+                        var data_uint32 = tbr.ReadUInt32();
+                        data_str = data_uint32.ToString();
+                        datas.Add(new ParamData(Type.UInt32, data_uint32, data_str));
+                        break;
+                    case Type.Int32:
+                        if (value.nullable && curr_pos + 4 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_int32 = tbr.ReadInt32();
+                        data_str = data_int32.ToString();
+                        datas.Add(new ParamData(Type.Int32, data_int32, data_str));
                         break;
                     case Type.StringUnicode:
                     case Type.StringSJIS:
@@ -200,16 +227,20 @@ namespace ProtScript
                         {
                             if (type == Type.StringUnicode)
                             {
-                                tmp = "$u\"" + Encoding.Unicode.GetString(ReadStringDoubleEnd(ref tbr)) + "\"";
+                                data_str = Encoding.Unicode.GetString(ReadStringDoubleEnd(ref tbr));
+                                datas.Add(new ParamData(Type.StringUnicode, data_str, data_str));
                             }
                             else if (type == Type.StringSJIS)
                             {
-                                tmp = "$j\"" + Encoding.GetEncoding("Shift-Jis").GetString(ReadStringSingleEnd(ref tbr)) + "\"";
+                                data_str = Encoding.GetEncoding("Shift-Jis").GetString(ReadStringSingleEnd(ref tbr));
+                                datas.Add(new ParamData(Type.StringSJIS, data_str, data_str));
                             }
                             else if (type == Type.StringUTF8)
                             {
-                                tmp = "$8\"" + Encoding.UTF8.GetString(ReadStringSingleEnd(ref tbr)) + "\"";
+                                data_str = Encoding.UTF8.GetString(ReadStringSingleEnd(ref tbr));
+                                datas.Add(new ParamData(Type.StringUTF8, data_str, data_str));
                             }
+
                             break;
                         }
                     case Type.LenStringUnicode:
@@ -223,11 +254,13 @@ namespace ProtScript
                             int len = tbr.ReadUInt16();
                             if (type == Type.LenStringUnicode)
                             {
-                                tmp = "&u\"" + Encoding.Unicode.GetString(tbr.ReadBytes(len * 2)) + "\"";
+                                data_str = Encoding.Unicode.GetString(tbr.ReadBytes(len * 2));
+                                datas.Add(new ParamData(Type.LenStringUnicode, data_str, data_str));
                             }
                             else if (type == Type.LenStringSJIS)
                             {
-                                tmp = "&j\"" + Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2)) + "\"";
+                                data_str = Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2));
+                                datas.Add(new ParamData(Type.LenStringSJIS, data_str, data_str));
                             }
                             break;
                         }
@@ -240,39 +273,92 @@ namespace ProtScript
                         uint pos = tbr.ReadUInt32();
                         if (code_position.ContainsKey(pos))
                         {
-                            tmp = "<" + code_position[pos] + ">";
+                            datas.Add(new ParamData(Type.Position, pos, code_position[pos].ToString()));
                         }
                         else
                         {
                             throw new Exception("错误的跳转位置: " + pos + "！");
                         }
-
-                        break;
-                    case Type.Opcode:
-                        byte scr_index = tbr.ReadByte();
-                        if(scr_index == opcode_byte)
-                            tmp = opcode;
-                        else
-                            tmp = "[" + ScriptUtil.Byte2Hex(scr_index) + "]";
-                        break;
-                    case Type.Skip:
-                        skip = true;
-                        tbr.ReadByte();
                         break;
                     default:
                         break;
                 }
-                if (nullable_skip)
-                {
-                    if (retn.Length >= 1 && retn[retn.Length - 1] == ' ') 
-                    {
-                        retn = retn.Remove(retn.Length - 1);
-                    }
-                    break;
-                }
-                retn += tmp + ((count != param.Count && !skip) ? " " : "");
-                retn = retn.Replace("\n", @"{\n}");
+ 
+            }
+            return datas.ToArray();
+        }
 
+        public static string[] ParamDataToArray(ParamData[] parameters)
+        {
+            List<string> retn = new List<string>();
+            string tmp = "";
+            foreach (var param in parameters)
+            {
+                Type type = param.type;
+                switch (type)
+                {
+                    case Type.Byte:
+                    case Type.Byte2:
+                    case Type.Byte3:
+                    case Type.Byte4:
+                        tmp = "[" + param.value_string + "]";
+                        break;
+                    case Type.UInt16:
+                        tmp = "(" + param.value_string + ")";
+                        break;
+                    case Type.Int16:
+                        tmp = "(" + param.value_string + ")";
+                        break;
+                    case Type.UInt32:
+                        tmp = "{" + param.value_string + "}";
+                        break;
+                    case Type.Int32:
+                        tmp = "{" + param.value_string + "}";
+                        break;
+                    case Type.StringUnicode:
+                        tmp = "$u\"" + param.value_string + "\"";
+                        break;
+                    case Type.StringSJIS:
+                        tmp = "$j\"" + param.value_string + "\"";
+                        break;
+                    case Type.StringUTF8:
+                        tmp = "$8\"" + param.value_string + "\"";
+                        break;
+                    case Type.LenStringUnicode:
+                        tmp = "&u\"" + param.value_string + "\"";
+                        break;
+                    case Type.LenStringSJIS:
+                        tmp = "&j\"" + param.value_string + "\"";
+                        break;
+                    case Type.Position:
+                        tmp = "<" + param.value_string + ">";
+                        break;
+                    default:
+                        break;
+                }
+                retn.Add(tmp.Replace("\n", @"{\n}"));
+            }
+
+            return retn.ToArray();
+        }
+
+        public static string ParamDataToString(ParamData[] parameters)
+        {
+            string retn = "";
+            foreach(var str in ParamDataToArray(parameters))
+            {
+                if (str != "")
+                {
+                    retn += str + " ";
+                }
+                else
+                {
+                    retn += "null" + " ";
+                }
+            }
+            if (retn.Length > 0)
+            {
+                retn = retn.Remove(retn.Length - 1);
             }
             return retn;
         }
