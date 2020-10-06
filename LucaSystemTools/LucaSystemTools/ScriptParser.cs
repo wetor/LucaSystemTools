@@ -152,8 +152,13 @@ namespace ProtScript
             else
             {
                 string flag = decompress_dic[scr_index].opcode;
-                int param_num = mbr.ReadByte();
-                byte[] param_data = mbr.ReadBytes(param_num * 2);
+                int param_num = 0;
+                byte[] param_data = null;
+                if (ScriptVersion == 3)
+                {
+                    param_num = mbr.ReadByte();
+                    param_data = mbr.ReadBytes(param_num * 2);
+                }
 
                 string data = ScriptOpcode.ParamDataToString(decompress_dic[scr_index].ReadFunc(ref mbr));
                 retn = (data.Length > 0 ? " " : "") + data;
