@@ -13,8 +13,9 @@ using System.Text;
 
 namespace ProtScript
 {
-    public enum Type
+    public enum DataType
     {
+        Null,
         Byte,
         Byte2,
         Byte3,
@@ -26,15 +27,18 @@ namespace ProtScript
         StringUnicode,
         StringSJIS,
         StringUTF8,
+        StringCustom,
         LenStringUnicode,
         LenStringSJIS,
+        LenStringUTF8,
+        LenStringCustom,
         Position
     }
     public struct ParamType
     {
-        public Type type;
+        public DataType type;
         public bool nullable;
-        public ParamType(Type _type, bool _nullable)
+        public ParamType(DataType _type, bool _nullable)
         {
             type = _type;
             nullable = _nullable;
@@ -104,7 +108,7 @@ namespace ProtScript
                     case ',':
                         if (is_param && tmp != "")
                         {
-                            param.Add(new ParamType((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                            param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable));
                             flag_nullable = false;
                         }
                         else
@@ -118,7 +122,7 @@ namespace ProtScript
                         if (is_param)
                         {
                             if (tmp != "")
-                                param.Add(new ParamType((Type)Enum.Parse(typeof(Type), tmp, true), flag_nullable));
+                                param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable));
                             flag_nullable = false;
                             is_param = false;
                         }
@@ -166,22 +170,22 @@ namespace ProtScript
             string data_str;
             foreach (var value in param)
             {
-                Type type = value.type;
+                DataType type = value.type;
                 count++;
                 curr_pos = (int)tbr.BaseStream.Position;
                 switch (type)
                 {
-                    case Type.Byte:
-                    case Type.Byte2:
-                    case Type.Byte3:
-                    case Type.Byte4:
+                    case DataType.Byte:
+                    case DataType.Byte2:
+                    case DataType.Byte3:
+                    case DataType.Byte4:
                         {
-                            var data_bytes = tbr.ReadBytes((int)type + 1);
+                            var data_bytes = tbr.ReadBytes((int)type);
                             data_str = ScriptUtil.Byte2Hex(data_bytes);
                             datas.Add(new ParamData(type, data_bytes, data_str));
                             break;
                         }
-                    case Type.UInt16:
+                    case DataType.UInt16:
                         if (value.nullable && curr_pos + 2 > tbr_len)
                         {
                             nullable_skip = true;
@@ -189,9 +193,9 @@ namespace ProtScript
                         }
                         var data_uint16 = tbr.ReadUInt16();
                         data_str = data_uint16.ToString();
-                        datas.Add(new ParamData(Type.UInt16, data_uint16, data_str));
+                        datas.Add(new ParamData(DataType.UInt16, data_uint16, data_str));
                         break;
-                    case Type.Int16:
+                    case DataType.Int16:
                         if (value.nullable && curr_pos + 2 > tbr_len)
                         {
                             nullable_skip = true;
@@ -199,9 +203,9 @@ namespace ProtScript
                         }
                         var data_int16 = tbr.ReadInt16();
                         data_str = data_int16.ToString();
-                        datas.Add(new ParamData(Type.Int16, data_int16, data_str));
+                        datas.Add(new ParamData(DataType.Int16, data_int16, data_str));
                         break;
-                    case Type.UInt32:
+                    case DataType.UInt32:
                         if (value.nullable && curr_pos + 4 > tbr_len)
                         {
                             nullable_skip = true;
@@ -209,9 +213,9 @@ namespace ProtScript
                         }
                         var data_uint32 = tbr.ReadUInt32();
                         data_str = data_uint32.ToString();
-                        datas.Add(new ParamData(Type.UInt32, data_uint32, data_str));
+                        datas.Add(new ParamData(DataType.UInt32, data_uint32, data_str));
                         break;
-                    case Type.Int32:
+                    case DataType.Int32:
                         if (value.nullable && curr_pos + 4 > tbr_len)
                         {
                             nullable_skip = true;
@@ -219,32 +223,32 @@ namespace ProtScript
                         }
                         var data_int32 = tbr.ReadInt32();
                         data_str = data_int32.ToString();
-                        datas.Add(new ParamData(Type.Int32, data_int32, data_str));
+                        datas.Add(new ParamData(DataType.Int32, data_int32, data_str));
                         break;
-                    case Type.StringUnicode:
-                    case Type.StringSJIS:
-                    case Type.StringUTF8:
+                    case DataType.StringUnicode:
+                    case DataType.StringSJIS:
+                    case DataType.StringUTF8:
                         {
-                            if (type == Type.StringUnicode)
+                            if (type == DataType.StringUnicode)
                             {
                                 data_str = Encoding.Unicode.GetString(ReadStringDoubleEnd(ref tbr));
-                                datas.Add(new ParamData(Type.StringUnicode, data_str, data_str));
+                                datas.Add(new ParamData(DataType.StringUnicode, data_str, data_str));
                             }
-                            else if (type == Type.StringSJIS)
+                            else if (type == DataType.StringSJIS)
                             {
                                 data_str = Encoding.GetEncoding("Shift-Jis").GetString(ReadStringSingleEnd(ref tbr));
-                                datas.Add(new ParamData(Type.StringSJIS, data_str, data_str));
+                                datas.Add(new ParamData(DataType.StringSJIS, data_str, data_str));
                             }
-                            else if (type == Type.StringUTF8)
+                            else if (type == DataType.StringUTF8)
                             {
                                 data_str = Encoding.UTF8.GetString(ReadStringSingleEnd(ref tbr));
-                                datas.Add(new ParamData(Type.StringUTF8, data_str, data_str));
+                                datas.Add(new ParamData(DataType.StringUTF8, data_str, data_str));
                             }
 
                             break;
                         }
-                    case Type.LenStringUnicode:
-                    case Type.LenStringSJIS:
+                    case DataType.LenStringUnicode:
+                    case DataType.LenStringSJIS:
                         {
                             if (value.nullable && curr_pos + 2 > tbr_len)
                             {
@@ -252,19 +256,19 @@ namespace ProtScript
                                 break;
                             }
                             int len = tbr.ReadUInt16();
-                            if (type == Type.LenStringUnicode)
+                            if (type == DataType.LenStringUnicode)
                             {
                                 data_str = Encoding.Unicode.GetString(tbr.ReadBytes(len * 2));
-                                datas.Add(new ParamData(Type.LenStringUnicode, data_str, data_str));
+                                datas.Add(new ParamData(DataType.LenStringUnicode, data_str, data_str));
                             }
-                            else if (type == Type.LenStringSJIS)
+                            else if (type == DataType.LenStringSJIS)
                             {
                                 data_str = Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2));
-                                datas.Add(new ParamData(Type.LenStringSJIS, data_str, data_str));
+                                datas.Add(new ParamData(DataType.LenStringSJIS, data_str, data_str));
                             }
                             break;
                         }
-                    case Type.Position:
+                    case DataType.Position:
                         if (value.nullable && curr_pos + 4 > tbr_len)
                         {
                             nullable_skip = true;
@@ -273,7 +277,7 @@ namespace ProtScript
                         uint pos = tbr.ReadUInt32();
                         if (code_position.ContainsKey(pos))
                         {
-                            datas.Add(new ParamData(Type.Position, pos, code_position[pos].ToString()));
+                            datas.Add(new ParamData(DataType.Position, pos, code_position[pos].ToString()));
                         }
                         else
                         {
@@ -290,48 +294,49 @@ namespace ProtScript
 
         public static string[] ParamDataToArray(ParamData[] parameters)
         {
+            Console.WriteLine(parameters.Length);
             List<string> retn = new List<string>();
             string tmp = "";
             foreach (var param in parameters)
             {
-                Type type = param.type;
+                DataType type = param.type;
                 switch (type)
                 {
-                    case Type.Byte:
-                    case Type.Byte2:
-                    case Type.Byte3:
-                    case Type.Byte4:
-                        tmp = "[" + param.value_string + "]";
+                    case DataType.Byte:
+                    case DataType.Byte2:
+                    case DataType.Byte3:
+                    case DataType.Byte4:
+                        tmp = "[" + param.valueString + "]";
                         break;
-                    case Type.UInt16:
-                        tmp = "(" + param.value_string + ")";
+                    case DataType.UInt16:
+                        tmp = "(" + param.valueString + ")";
                         break;
-                    case Type.Int16:
-                        tmp = "(" + param.value_string + ")";
+                    case DataType.Int16:
+                        tmp = "(" + param.valueString + ")";
                         break;
-                    case Type.UInt32:
-                        tmp = "{" + param.value_string + "}";
+                    case DataType.UInt32:
+                        tmp = "{" + param.valueString + "}";
                         break;
-                    case Type.Int32:
-                        tmp = "{" + param.value_string + "}";
+                    case DataType.Int32:
+                        tmp = "{" + param.valueString + "}";
                         break;
-                    case Type.StringUnicode:
-                        tmp = "$u\"" + param.value_string + "\"";
+                    case DataType.StringUnicode:
+                        tmp = "$u\"" + param.valueString + "\"";
                         break;
-                    case Type.StringSJIS:
-                        tmp = "$j\"" + param.value_string + "\"";
+                    case DataType.StringSJIS:
+                        tmp = "$j\"" + param.valueString + "\"";
                         break;
-                    case Type.StringUTF8:
-                        tmp = "$8\"" + param.value_string + "\"";
+                    case DataType.StringUTF8:
+                        tmp = "$8\"" + param.valueString + "\"";
                         break;
-                    case Type.LenStringUnicode:
-                        tmp = "&u\"" + param.value_string + "\"";
+                    case DataType.LenStringUnicode:
+                        tmp = "&u\"" + param.valueString + "\"";
                         break;
-                    case Type.LenStringSJIS:
-                        tmp = "&j\"" + param.value_string + "\"";
+                    case DataType.LenStringSJIS:
+                        tmp = "&j\"" + param.valueString + "\"";
                         break;
-                    case Type.Position:
-                        tmp = "<" + param.value_string + ">";
+                    case DataType.Position:
+                        tmp = "<" + param.valueString + ">";
                         break;
                     default:
                         break;
@@ -390,7 +395,7 @@ namespace ProtScript
 
             foreach (var value in param)
             {
-                retn += Enum.GetName(typeof(Type), value.type) + ", ";
+                retn += Enum.GetName(typeof(DataType), value.type) + ", ";
             }
             retn = retn.Remove(retn.Length - 2);
             if(param.Count>0)

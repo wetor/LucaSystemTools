@@ -10,7 +10,7 @@ namespace ProtScript
         {
             hexString = hexString.Replace(" ", "");
             if (hexString.Substring(0, 2).ToLower() == "0x")
-                hexString.Remove(0, 2);
+                hexString = hexString.Remove(0, 2);
             if ((hexString.Length % 2) != 0)
                 hexString += " ";
             byte[] returnBytes = new byte[hexString.Length / 2];

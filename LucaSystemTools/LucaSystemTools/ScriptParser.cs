@@ -32,6 +32,10 @@ namespace ProtScript
     public class ScriptParser:AbstractFileParser
     {
         private GameScript game;
+
+        private Dictionary<byte, ScriptOpcode> decompress_dic = new Dictionary<byte, ScriptOpcode>();
+        private Dictionary<string, byte> compress_dic = new Dictionary<string, byte>();
+
         private FileStream fs;
         private BinaryReader br;
         private int ScriptVersion = 3;
@@ -94,7 +98,7 @@ namespace ProtScript
                 code_position.Add((uint)fs.Position, code_bytes.Count + 1);
                 byte[] tmp = ReadCodeBytes();
                 code_bytes.Add(tmp);
-                //tsw.WriteLine(DecompileCode(tmp));
+                //tsw.WriteLine(tmp.Length);
             }
             DecompileAllCode(ref tsw);
             tsw.Close();
@@ -152,9 +156,13 @@ namespace ProtScript
             else
             {
                 string flag = decompress_dic[scr_index].opcode;
-                int param_num = mbr.ReadByte();
-                byte[] param_data = mbr.ReadBytes(param_num * 2);
-
+                int param_num = 0;
+                byte[] param_data = null;
+                if (ScriptVersion == 3)
+                {
+                    param_num = mbr.ReadByte();
+                    param_data = mbr.ReadBytes(param_num * 2);
+                }
                 string data = ScriptOpcode.ParamDataToString(decompress_dic[scr_index].ReadFunc(ref mbr));
                 retn = (data.Length > 0 ? " " : "") + data;
 
@@ -435,9 +443,6 @@ namespace ProtScript
             br.Close();
             fs.Close();
         }
-        // 默认是SP的
-        private Dictionary<byte, ScriptOpcode> decompress_dic = new Dictionary<byte, ScriptOpcode>();
-        private Dictionary<string , byte> compress_dic = new Dictionary< string, byte>();
 
         private void InitDic(string game) //SP CL
         {
@@ -482,7 +487,14 @@ namespace ProtScript
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
-            Decompile(name);
+            ScriptReader reader = new ScriptReader(fs, br, decompress_dic);
+            reader.ReadScript();
+            //reader.SaveJson(@"D:\Download\Luac_Resources\SP\test\test.json");
+            //reader.LoadJson();
+            //byte[] bytes = new byte[4];
+            //Console.WriteLine(bytes.GetType().Name);
+            //Console.ReadKey();
+            //Decompile(name);
         }
 
         public override void FileImport(string name)
