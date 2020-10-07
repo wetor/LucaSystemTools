@@ -1,4 +1,4 @@
-## LucaSystemTools
+## LucaSystemTools ![test_release](https://github.com/YuriSizuku/LucaSystemTools/workflows/test_release/badge.svg?branch=dev)
 Prototype's galgame tools
 ## 文件
 
