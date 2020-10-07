@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
+using LucaSystemTools;
 
 
 
@@ -19,21 +20,35 @@ namespace ProtScript
         public int count { get; set; }
         [JsonProperty]
         public UInt16[] data { get; set; }
+
         public CodeInfo(int count)
         {
             this.count = count;
             data = null;
         }
+        public byte[] ToBytes()
+        {
+            List<byte> bytes = new List<byte>();
+            bytes.Add((byte)count);
+            foreach(var num in data)
+            {
+                bytes.AddRange(BitConverter.GetBytes(num));
+            }
+            return bytes.ToArray();
+        }
         public override string ToString()
         {
             string retn = "{";
-            foreach (var num in data)
+            if (data != null)
             {
-                retn += num.ToString() + ",";
-            }
-            if (count > 0)
-            {
-                retn = retn.Remove(retn.Length - 1);
+                foreach (var num in data)
+                {
+                    retn += num.ToString() + ",";
+                }
+                if (count > 0)
+                {
+                    retn = retn.Remove(retn.Length - 1);
+                }
             }
             retn += "}";
             return retn;
@@ -85,7 +100,7 @@ namespace ProtScript
             this.bytes = bytes;
             this.valueString = valueString;
         }
-        public void setValue(object value)
+        public void SetValue(object value)
         {
             this.value = value;
             this.valueString = value.ToString();
@@ -121,9 +136,9 @@ namespace ProtScript
         public int gotoParamIndex { get; set; }
         // 是否为跳转目标
         [JsonProperty]
-        public bool isTarget { get; set; } = false;
+        public bool isFlag { get; set; } = false;
         [JsonProperty]
-        public int targetId { get; set; }
+        public int flagId { get; set; }
 
         public CodeLine(int index, int position)
         {
@@ -135,7 +150,7 @@ namespace ProtScript
         /// 此语句包含跳转，设置跳转参数的下标
         /// </summary>
         /// <param name="paramIndex"></param>
-        public void setGoto(int paramIndex)
+        public void SetGoto(int paramIndex)
         {
             isGoto = true;
             gotoParamIndex = paramIndex;
@@ -144,12 +159,12 @@ namespace ProtScript
         /// 此语句为跳转目标，设置唯一id
         /// </summary>
         /// <param name="id"></param>
-        public void setTarget(int id)
+        public void SetFlag(int id)
         {
-            isTarget = true;
-            targetId = id;
+            isFlag = true;
+            flagId = id;
         }
-        public ParamData getGoto()
+        public ParamData GetGoto()
         {
             return paramDatas[gotoParamIndex];
         }
@@ -157,9 +172,9 @@ namespace ProtScript
         /// 修改跳转参数值
         /// </summary>
         /// <param name="value"></param>
-        public void setGotoValue(int value)
+        public void SetGotoValue(int value)
         {
-            paramDatas[gotoParamIndex].setValue((object)value);
+            paramDatas[gotoParamIndex].SetValue((object)value);
         }
         public override string ToString()
         {
@@ -168,7 +183,7 @@ namespace ProtScript
             {
                 if (ScriptEntity.IsString(param.type))
                 {
-                    retn += "," + "\"" + param.valueString + "\"";
+                    retn += "," + "\"" + param.valueString.Replace("\n",@"\n") + "\"";
                 }
                 else
                 {
@@ -176,7 +191,7 @@ namespace ProtScript
                 }
                 
             }
-            return (isTarget ? "[" + targetId + "]>>" : "") + opcode + "(" + info.ToString() + retn + ")" + (isGoto ? ">>" : "");
+            return (isFlag ? "[" + flagId + "]>>" : "") + opcode + "(" + info.ToString() + retn + ")" + (isGoto ? ">>" : "");
         }
     }
     /// <summary>
@@ -185,12 +200,21 @@ namespace ProtScript
     [JsonObject(MemberSerialization.OptIn)]
     public class ScriptEntity
     {
-        [JsonProperty]
+        [JsonProperty("ToolVersion")]
+        public uint toolVersion { get; set; } = Program.toolVersion;
+        [JsonProperty("ScriptVersion")]
         public int version { get; set; } = 3;
 
         [JsonProperty("codes")]
         public List<CodeLine> lines { get; set; } = new List<CodeLine>();
 
+        /// <summary>
+        /// 使用字符串和类型重建ParamData
+        /// 重建value和bytes
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="type"></param>
+        /// <returns></returns>
         public static ParamData ToParamData(string data, DataType type)
         {
             ParamData param = new ParamData();
@@ -216,12 +240,12 @@ namespace ProtScript
                     break;
                 case DataType.UInt32:
                 case DataType.Position:
-                    var dataUint32 = Convert.ToUInt16(data);
+                    var dataUint32 = Convert.ToUInt32(data);
                     dataBytes = BitConverter.GetBytes(dataUint32);
                     param = new ParamData(type, dataUint32, dataBytes, data);
                     break;
                 case DataType.Int32:
-                    var dataInt32 = Convert.ToInt16(data);
+                    var dataInt32 = Convert.ToInt32(data);
                     dataBytes = BitConverter.GetBytes(dataInt32);
                     param = new ParamData(type, dataInt32, dataBytes, data);
                     break;

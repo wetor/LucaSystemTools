@@ -18,19 +18,20 @@ namespace ProtScript
         // 当前代码行下标
         private int currentLine = 0;
 
-        private Dictionary<int, int> blockPosLine = new Dictionary<int, int>();
+        private Dictionary<int, int> gotoPosLine = new Dictionary<int, int>();
 
         // 跳转目标位置
-        private HashSet<int> targetPos = new HashSet<int>();
+        private HashSet<int> flagPos = new HashSet<int>();
 
 
         private ScriptEntity script = new ScriptEntity();
 
-        public ScriptReader(FileStream tfs, BinaryReader tbr, Dictionary<byte, ScriptOpcode> dict)
+        public ScriptReader(FileStream tfs, BinaryReader tbr, Dictionary<byte, ScriptOpcode> dict, int version)
         {
             fs = tfs;
             br = tbr;
             opcodeDict = dict;
+            script.version = version;
         }
         public void ReadScript()
         {
@@ -64,12 +65,12 @@ namespace ProtScript
             {
                 if (script.lines[line].isGoto)
                 {
-                    int pos = (int)(uint)script.lines[line].getGoto().value;
-                    script.lines[line].setGotoValue(blockPosLine[pos]);
+                    int pos = (int)(uint)script.lines[line].GetGoto().value;
+                    script.lines[line].SetGotoValue(gotoPosLine[pos]);
                 }
-                if (targetPos.Contains(script.lines[line].position))
+                if (flagPos.Contains(script.lines[line].position))
                 {
-                    script.lines[line].setTarget(++id);
+                    script.lines[line].SetFlag(++id);
                 }
             }
 
@@ -77,8 +78,8 @@ namespace ProtScript
             {
                 if (script.lines[line].isGoto)
                 {
-                    int pos = (int)script.lines[line].getGoto().value;
-                    script.lines[line].setGotoValue(script.lines[pos].targetId);
+                    int pos = (int)script.lines[line].GetGoto().value;
+                    script.lines[line].SetGotoValue(script.lines[pos].flagId);
                 }
             }
         }
@@ -86,41 +87,64 @@ namespace ProtScript
         {
             CodeLine code = new CodeLine(currentLine, (int)fs.Position);
             // 位置 下标
-            blockPosLine.Add(code.position, currentLine);
-            
-
-            int codeLength = br.ReadUInt16() - 2;
+            gotoPosLine.Add(code.position, currentLine);
+            int codeLength = 0;
             int codeOffset = 0;
 
-            code.opcodeIndex = br.ReadByte();
-            codeOffset++;
+
+            if (script.version == 2)
+            {
+                // [xx]   [xx]
+                // opcode len
+                code.opcodeIndex = br.ReadByte();
+                codeLength = br.ReadByte() * 2;
+                codeOffset += 2;
+            }
+            else if(script.version == 3)
+            {
+                // [xx xx] [xx]
+                // len     opcode
+                codeLength = br.ReadUInt16() - 2;
+                code.opcodeIndex = br.ReadByte();
+                codeOffset++;
+            }
+
+
             if (!opcodeDict.ContainsKey(code.opcodeIndex))
             {
                 throw new Exception("未知的opcode!");
             }
             code.opcode = opcodeDict[code.opcodeIndex].opcode;
 
-            CodeInfo info = new CodeInfo(br.ReadByte());
-            codeOffset++;
-            int infoCount = info.count;
-            // END指令info.count需要减一
-            if (code.opcode == "END")
+
+            if (script.version == 2)
             {
-                infoCount--;
+                code.info = new CodeInfo(0);
             }
-            info.data = new UInt16[infoCount];
-            for (int i = 0; i < infoCount; i++)
+            else if (script.version == 3)
             {
-                info.data[i] = br.ReadUInt16();
-                codeOffset += 2;
+                CodeInfo info = new CodeInfo(br.ReadByte());
+                codeOffset++;
+                int infoCount = info.count;
+                // END指令info.count需要减一
+                if (code.opcode == "END")
+                {
+                    infoCount--;
+                }
+                info.data = new UInt16[infoCount];
+                for (int i = 0; i < infoCount; i++)
+                {
+                    info.data[i] = br.ReadUInt16();
+                    codeOffset += 2;
+                }
+                code.info = info;
             }
-            code.info = info;
+
+
             // 参数类型列表
             code.paramTypes = opcodeDict[code.opcodeIndex].param.ToArray();
             // 读取已知参数数据
             code.paramDatas = ReadParamData(code.paramTypes, codeLength, ref codeOffset);
-
-
             // 处理未知参数数据
             while (codeOffset + 1 < codeLength)
             {
@@ -132,9 +156,15 @@ namespace ProtScript
             {
                 byte[] temp = br.ReadBytes(1);
                 codeOffset++;
-                code.paramDatas.Add(new ParamData(DataType.Byte, temp, ScriptUtil.Byte2Hex(temp, false, true)));
+                if (script.version == 2 && temp[0] == 0x00)
+                {
+                    // 最后多出的单字节，若为0x00则舍弃
+                }
+                else 
+                {
+                    code.paramDatas.Add(new ParamData(DataType.Byte, temp, ScriptUtil.Byte2Hex(temp, false, true)));
+                }
             }
-
             // 长度非偶数，最后会有补位
             if (codeLength % 2 != 0)
             {
@@ -147,8 +177,8 @@ namespace ProtScript
             {
                 if (param.type == DataType.Position)
                 {
-                    code.setGoto(index);
-                    targetPos.Add((int)(uint)param.value);
+                    code.SetGoto(index);
+                    flagPos.Add((int)(uint)param.value);
                 }
                 index++;
             }

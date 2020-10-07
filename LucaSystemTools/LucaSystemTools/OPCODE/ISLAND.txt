@@ -8,11 +8,11 @@ SUB
 RANDOM
 VARSTR (UInt16, UInt16, UInt16)
 SET
-GOTO (UInt16, UInt32)
+GOTO (UInt16, Position)
 ONGOTO
 GOSUB
-IFY (UInt16, StringSJIS, UInt32)
-IFN (UInt16, StringSJIS, UInt32)
+IFY (UInt16, StringSJIS, Position)
+IFN (UInt16, StringSJIS, Position)
 RETURN
 JUMP (UInt16, StringSJIS, UInt32)
 FARCALL

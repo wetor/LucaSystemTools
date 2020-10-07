@@ -33,8 +33,8 @@ namespace ProtScript
     {
         private GameScript game;
 
-        private Dictionary<byte, ScriptOpcode> decompress_dic = new Dictionary<byte, ScriptOpcode>();
-        private Dictionary<string, byte> compress_dic = new Dictionary<string, byte>();
+        public Dictionary<byte, ScriptOpcode> decompress_dic = new Dictionary<byte, ScriptOpcode>();
+        public Dictionary<string, byte> compress_dic = new Dictionary<string, byte>();
 
         private FileStream fs;
         private BinaryReader br;
@@ -487,14 +487,7 @@ namespace ProtScript
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
-            ScriptReader reader = new ScriptReader(fs, br, decompress_dic);
-            reader.ReadScript();
-            //reader.SaveJson(@"D:\Download\Luac_Resources\SP\test\test.json");
-            //reader.LoadJson();
-            //byte[] bytes = new byte[4];
-            //Console.WriteLine(bytes.GetType().Name);
-            //Console.ReadKey();
-            //Decompile(name);
+            Decompile(name);
         }
 
         public override void FileImport(string name)
