@@ -5,6 +5,7 @@ using System.Linq;
 using System.IO;
 using LucaSystemTools;
 using Newtonsoft.Json;
+using ProtScript.Entity;
 
 namespace ProtScript
 {
@@ -21,7 +22,7 @@ namespace ProtScript
         private Dictionary<int, int> gotoPosLine = new Dictionary<int, int>();
 
         // 跳转目标位置
-        private HashSet<int> flagPos = new HashSet<int>();
+        private HashSet<int> labelPos = new HashSet<int>();
 
 
         private ScriptEntity script = new ScriptEntity();
@@ -40,23 +41,16 @@ namespace ProtScript
                 script.lines.Add(ReadCodeLine());
             }
             FixGotoPosition();
-
-
-            foreach (var code in script.lines)
+            if (Program.debug)
             {
-                Console.WriteLine(code.index + " " + code.position);
-                Console.WriteLine(code.ToString());
+                foreach (var code in script.lines)
+                {
+                    Console.WriteLine(code.index + " " + code.position);
+                    Console.WriteLine(code.ToString());
+                }
             }
         }
-        public void SaveJson(string path)
-        {
-            JsonSerializerSettings jsetting = new JsonSerializerSettings();
-            jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
-            StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
-            sw.WriteLine(JsonConvert.SerializeObject(script, Formatting.Indented, jsetting));
-            sw.Close();
-        }
-
+        
         public void FixGotoPosition()
         {
             // 遍历行
@@ -68,18 +62,18 @@ namespace ProtScript
                     int pos = (int)(uint)script.lines[line].GetGoto().value;
                     script.lines[line].SetGotoValue(gotoPosLine[pos]);
                 }
-                if (flagPos.Contains(script.lines[line].position))
+                if (labelPos.Contains(script.lines[line].position))
                 {
-                    script.lines[line].SetFlag(++id);
+                    script.lines[line].SetLabel("label_" + id);
+                    id++;
                 }
             }
-
             for (int line = 0; line < script.lines.Count; line++)
             {
                 if (script.lines[line].isGoto)
                 {
                     int pos = (int)script.lines[line].GetGoto().value;
-                    script.lines[line].SetGotoValue(script.lines[pos].flagId);
+                    script.lines[line].gotoLabel = script.lines[pos].label;
                 }
             }
         }
@@ -116,16 +110,24 @@ namespace ProtScript
             }
             code.opcode = opcodeDict[code.opcodeIndex].opcode;
 
-
+            int infoCount = 0;
+            CodeInfo info = null;
             if (script.version == 2)
             {
-                code.info = new CodeInfo(0);
+                info = new CodeInfo(0);
+                info.count = 1;
+                info.data = new UInt16[1];
+                info.data[0] = br.ReadUInt16();
+                //fs.Seek(-2, SeekOrigin.Current);
+                codeOffset += 2;
+                code.info = info;
+                
             }
             else if (script.version == 3)
             {
-                CodeInfo info = new CodeInfo(br.ReadByte());
+                info = new CodeInfo(br.ReadByte());
                 codeOffset++;
-                int infoCount = info.count;
+                infoCount = info.count;
                 // END指令info.count需要减一
                 if (code.opcode == "END")
                 {
@@ -178,14 +180,38 @@ namespace ProtScript
                 if (param.type == DataType.Position)
                 {
                     code.SetGoto(index);
-                    flagPos.Add((int)(uint)param.value);
+                    labelPos.Add((int)(uint)param.value);
                 }
                 index++;
             }
             currentLine++;
             return code;
         }
+        public void SaveJson(string path)
+        {
+            JsonSerializerSettings jsetting = new JsonSerializerSettings();
+            jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
+            StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
+            sw.WriteLine(JsonConvert.SerializeObject(script, Formatting.Indented, jsetting));
+            sw.Close();
+        }
+        public void SaveLua(string path, bool canLoad = true)
+        {
+            StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
+            foreach (var code in script.lines)
+            {
+                if (canLoad)
+                {
+                    sw.WriteLine(code.ToStringAll());
+                }
+                else
+                {
+                    sw.WriteLine(code.ToString());
+                }
 
+            }
+            sw.Close();
+        }
         /// <summary>
         /// 读取参数的实际值
         /// </summary>
@@ -296,14 +322,15 @@ namespace ProtScript
                         break;
                 }
                 codeOffset += (int)(fs.Position - tempPos);
+                if(codeOffset > codeLength)
+                {
+                    throw new Exception("opcode参数数量错误！ ");
+                }
 
             }
             return datas;
         }
-        private bool CanRead()
-        {
-            return fs.CanRead && fs.Position < fs.Length;
-        }
+        
         private byte[] ReadStringDoubleEnd()
         {
             List<byte> buff = new List<byte>();

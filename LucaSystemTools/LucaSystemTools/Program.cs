@@ -44,6 +44,8 @@ namespace LucaSystemTools
         public static uint toolVersion = 20201007;
         static void Main(string[] args)
         {
+            Test.TestMain();
+            return;
             if (args.Length > 0)
             {
                 CommandLineApplication.Execute<CommandLineUtil>(args);

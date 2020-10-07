@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace ProtScript
@@ -34,6 +35,46 @@ namespace ProtScript
         public static string Byte2Hex(byte bytes)// 字节数组转16进制字符串
         {
             return bytes.ToString("X2");
+        }
+        public static int InitOpcodeDict(string path,
+            ref Dictionary<byte, ScriptOpcode> bytesToOpcodeDict,
+            ref Dictionary<string, byte> opcodeToBytesDict)//SP CL
+        {
+            string[] dic;
+            int scriptVersion = 3;
+            if (File.Exists(path))
+            {
+                dic = File.ReadAllLines(path);
+            }
+            else
+            {
+                throw new Exception("未找到指定游戏");
+            }
+            bytesToOpcodeDict.Clear();
+            opcodeToBytesDict.Clear();
+            if (dic.Length > 0)
+            {
+                if (dic[0].Trim() == ";Ver3")
+                {
+                    scriptVersion = 3;
+                }
+                else if (dic[0].Trim() == ";Ver2")
+                {
+                    scriptVersion = 2;
+                }
+            }
+            int i = 0;
+            foreach (string line in dic)
+            {
+                if (line.TrimStart()[0] == ';')
+                {
+                    continue;
+                }
+                bytesToOpcodeDict.Add((byte)i, new ScriptOpcode((byte)i, line.Replace("\r", "")));
+                opcodeToBytesDict.Add(bytesToOpcodeDict[(byte)i].opcode, (byte)i);
+                i++;
+            }
+            return scriptVersion;
         }
 
     }

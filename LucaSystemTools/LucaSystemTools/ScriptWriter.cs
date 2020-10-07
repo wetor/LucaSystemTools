@@ -4,6 +4,7 @@ using System.Text;
 using System.IO;
 using Newtonsoft.Json;
 using LucaSystemTools;
+using ProtScript.Entity;
 
 namespace ProtScript
 {
@@ -15,13 +16,13 @@ namespace ProtScript
         private Dictionary<string, byte> opcodeDict = new Dictionary<string, byte>();
 
         /// <summary>
-        /// 第一遍写入生成dictFlag<flag, pos>
+        /// 第一遍写入生成dictLabel<label, pos>
         /// </summary>
-        private Dictionary<int, uint> dictFlag = new Dictionary<int, uint>();
+        private Dictionary<string, uint> dictLabel = new Dictionary<string, uint>();
         /// <summary>
-        /// 写入完后，遍历dictGoto<pos, flag>在pos写入dictFlag[flag]
+        /// 写入完后，遍历dictGoto<pos, label>在pos写入dictLabel[label]
         /// </summary>
-        private Dictionary<int, int> dictGoto = new Dictionary<int, int>();
+        private Dictionary<int, string> dictGoto = new Dictionary<int, string>();
 
         private ScriptEntity script = new ScriptEntity();
 
@@ -40,9 +41,14 @@ namespace ProtScript
             WriteParamData();
             foreach (var code in script.lines)
             {
-                if (code.isFlag)
+                if (Program.debug)
                 {
-                    dictFlag.Add(code.flagId, (uint)fs.Position);
+                    Console.WriteLine(fs.Position);
+                    Console.WriteLine(code.ToString());
+                }
+                if (code.isLabel)
+                {
+                    dictLabel.Add(code.label, (uint)fs.Position);
                 }
                 int codeLen = (int)fs.Position;
 
@@ -57,12 +63,11 @@ namespace ProtScript
                     bw.Write(opcodeDict[code.opcode]);
                     bw.Write(code.info.ToBytes());
                 }
-                
                 foreach (var param in code.paramDatas)
                 {
                     if(code.isGoto && param.type == DataType.Position)
                     {
-                        dictGoto.Add((int)fs.Position, (int)(uint)param.value);
+                        dictGoto.Add((int)fs.Position, code.gotoLabel);
                         bw.Write(param.bytes);
                     }
                     else
@@ -87,23 +92,10 @@ namespace ProtScript
                     bw.Write((byte)0x00);
                 }
             }
-            foreach (KeyValuePair<int, int> gotokv in dictGoto)
+            foreach (KeyValuePair<int, string> gotokv in dictGoto)
             {
                 fs.Seek(gotokv.Key, SeekOrigin.Begin);
-                bw.Write(BitConverter.GetBytes(dictFlag[gotokv.Value]));
-            }
-
-        }
-        public void LoadJson(string path)
-        {
-            JsonSerializerSettings jsetting = new JsonSerializerSettings();
-            jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
-            StreamReader sr = new StreamReader(path, Encoding.UTF8);
-            script = JsonConvert.DeserializeObject<ScriptEntity>(sr.ReadToEnd(), jsetting);
-            sr.Close();
-            if (script.toolVersion > Program.toolVersion)
-            {
-                throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
+                bw.Write(BitConverter.GetBytes(dictLabel[gotokv.Value]));
             }
 
         }
@@ -118,5 +110,28 @@ namespace ProtScript
                 }
             }
         }
+        public void LoadJson(string path)
+        {
+            JsonSerializerSettings jsetting = new JsonSerializerSettings();
+            jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
+            StreamReader sr = new StreamReader(path, Encoding.UTF8);
+            script = JsonConvert.DeserializeObject<ScriptEntity>(sr.ReadToEnd(), jsetting);
+            sr.Close();
+            if (script.toolVersion > Program.toolVersion)
+            {
+                throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
+            }
+
+        }
+        public void LoadLua(string path)
+        {
+            StreamReader sr = new StreamReader(path, Encoding.UTF8);
+            while (sr.BaseStream.Position < sr.BaseStream.Length)
+            {
+                new CodeLine(sr.ReadLine());
+            }
+            sr.Close();
+        }
+        
     }
 }

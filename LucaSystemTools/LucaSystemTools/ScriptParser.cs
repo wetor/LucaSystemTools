@@ -15,6 +15,7 @@ using System.IO;
 using AdvancedBinary;
 using LucaSystemTools;
 using LucaSystem;
+using ProtScript.Entity;
 
 namespace ProtScript
 {
@@ -59,32 +60,8 @@ namespace ProtScript
             // Compile
             goto_position = new Dictionary<uint, int>();
             line_position = new List<uint>();
-            switch (game)
-            {
-                case GameScript.ISLAND:
-                    InitDic("ISLAND");
-                    ScriptVersion = 2;
-                    break;
-                case GameScript.FLOWERS_PSV:
-                    InitDic("FLOWERS_PSV");
-                    ScriptVersion = 2;
-                    break;
-                case GameScript.SP:
-                    InitDic("SP");
-                    break;
-                case GameScript.TAWL:
-                    InitDic("TAWL");
-                    break;
-                case GameScript.FLOWERS:
-                    InitDic("FLOWERS");
-                    break;
-                case GameScript.CUSTOM:
-                    InitDic(custom_game);
-                    break;
-                default:
-                    throw new Exception("不支持的游戏类型！");
-            }
-
+            ScriptVersion = ScriptUtil.InitOpcodeDict(Path.Combine("OPCODE", game.ToString() + ".txt"), 
+                ref decompress_dic, ref compress_dic);
         }
         public void Decompile(string path)
         {
@@ -106,7 +83,6 @@ namespace ProtScript
         }
         private void DecompileAllCode(ref StreamWriter tsw)
         {
-            ScriptOpcode.code_position = code_position;
             foreach (byte[] bytes in code_bytes)
             {
                 tsw.WriteLine(DecompileCode(bytes));
@@ -148,22 +124,29 @@ namespace ProtScript
             MemoryStream ms = new MemoryStream(line);
             BinaryReader mbr = new BinaryReader(ms);
             string retn = "";
-            byte scr_index = mbr.ReadByte();
-            if (!decompress_dic.ContainsKey(scr_index))
+            byte opcode_index = mbr.ReadByte();
+            if (!decompress_dic.ContainsKey(opcode_index))
             {
                 throw new Exception("未知的opcode！");
             }
             else
             {
-                string flag = decompress_dic[scr_index].opcode;
+                string opcode = decompress_dic[opcode_index].opcode;
                 int param_num = 0;
                 byte[] param_data = null;
-                if (ScriptVersion == 3)
+                if(ScriptVersion == 2)
+                {
+                    mbr.ReadByte();
+                    param_num = 1;
+                    param_data = mbr.ReadBytes(param_num * 2);
+                }
+                else if (ScriptVersion == 3)
                 {
                     param_num = mbr.ReadByte();
                     param_data = mbr.ReadBytes(param_num * 2);
                 }
-                string data = ScriptOpcode.ParamDataToString(decompress_dic[scr_index].ReadFunc(ref mbr));
+  
+                string data = ParamDataToString(ReadParamData(ref mbr, decompress_dic[opcode_index].param));
                 retn = (data.Length > 0 ? " " : "") + data;
 
 
@@ -175,27 +158,21 @@ namespace ProtScript
                 {
                     retn += " [" + ScriptUtil.Byte2Hex(mbr.ReadByte()) + "]";
                 }
-                if (ScriptVersion == 2)
-                {
-                    //len = flag2 * 2
-                    retn = flag + retn;
-                }
-                else if (ScriptVersion == 3)
-                {
-                    param_num = param_data.Length / 2 < param_num ? param_data.Length / 2 : param_num;
-                    string tmp = "(";
-                    for(int i = 0; i < param_num; i++)
-                    {
-                        tmp += BitConverter.ToUInt16(param_data, i * 2).ToString();
-                        if(i != param_num - 1)
-                        {
-                            tmp += ",";
-                        }
-                    }
-                    tmp += ")";
 
-                    retn = flag + tmp + retn;
+
+                param_num = param_data.Length / 2 < param_num ? param_data.Length / 2 : param_num;
+                string info = "(";
+                for (int i = 0; i < param_num; i++)
+                {
+                    info += BitConverter.ToUInt16(param_data, i * 2).ToString();
+                    if (i != param_num - 1)
+                    {
+                        info += ",";
+                    }
                 }
+                info += ")";
+                retn = opcode + info + retn;
+     
             }
             if (retn != "    " && retn != "" && Program.debug)
             {
@@ -284,7 +261,8 @@ namespace ProtScript
                             break;
                         case '$':
                             {
-                                token = token.Replace(@"{\n}", "\n");
+                                token = token.Replace(@"\n", "\n");
+                                token = token.Replace(@"{\n}", "\n");// 兼容保留
                                 string tmp = token.Substring(3, token.Length - 4);
                                 if (token[1] == 'u') //unicode string + 00 00
                                 {
@@ -310,7 +288,8 @@ namespace ProtScript
                             }
                         case '&':
                             {
-                                token = token.Replace(@"{\n}", "\n");
+                                token = token.Replace(@"\n", "\n");
+                                token = token.Replace(@"{\n}", "\n");// 兼容保留
                                 string tmp = token.Substring(3, token.Length - 4);
                                 if (token[1] == 'u') //len + unicode string
                                 {
@@ -352,47 +331,51 @@ namespace ProtScript
                         default:
                             if (token[0] >= 'A' && token[0] <= 'Z')
                             {
-                                if (ScriptVersion == 2 && compress_dic.ContainsKey(token))
+                                int index_info = token.IndexOf('(');
+                                string info = "";
+                                if (index_info > 0)
                                 {
-                                    // [opcode] length/2 code
-                                    // 1byte  1byte
-                                    ms.Seek(len_pos, SeekOrigin.Begin);
-                                    mbw.Write(compress_dic[token]);
-                                    mbw.Write(new byte[1]);
+                                    info = token.Substring(index_info);
+                                    token = token.Substring(0, index_info);
                                 }
-                                else if (ScriptVersion == 3)
+                                if (compress_dic.ContainsKey(token))
                                 {
-                                    int index_info = token.IndexOf('(');
-                                    string info = "";
-                                    if (index_info > 0)
+                                    if (ScriptVersion == 2)
                                     {
-                                        info = token.Substring(index_info);
-                                        token = token.Substring(0, index_info);
+                                        // [opcode] length/2 code
+                                        // 1byte  1byte
+                                        ms.Seek(len_pos, SeekOrigin.Begin);
+                                        mbw.Write(compress_dic[token]);
+                                        mbw.Write(new byte[1]);
                                     }
-                                    if (compress_dic.ContainsKey(token))
+                                    else if (ScriptVersion == 2)
                                     {
                                         // length [opcode] code
                                         // 2byte  1byte
                                         mbw.Write(compress_dic[token]);
                                     }
-                                    if (index_info > 0)
-                                    {
-                                        if (info.Length > 2) 
-                                        {
-                                            string[] info_split = info.Substring(1, info.Length - 2).Split(',');
-                                            mbw.Write((byte)info_split.Length);
-                                            foreach (string str1 in info_split)
-                                            {
-                                                mbw.Write(BitConverter.GetBytes(Convert.ToUInt16(str1)));
-                                            }
-                                        }
-                                        else
-                                        {
-                                            mbw.Write((byte)0);
-                                        }
-                                        
-                                    }
                                 }
+                                if (index_info > 0)
+                                {
+                                    if (info.Length > 2)
+                                    {
+                                        string[] info_split = info.Substring(1, info.Length - 2).Split(',');
+                                        if (ScriptVersion == 3)
+                                        {
+                                            mbw.Write((byte)info_split.Length);
+                                        }
+                                        foreach (string str1 in info_split)
+                                        {
+                                            mbw.Write(BitConverter.GetBytes(Convert.ToUInt16(str1)));
+                                        }
+                                    }
+                                    else
+                                    {
+                                        mbw.Write((byte)0);
+                                    }
+
+                                }
+
                             }
                             else
                                 throw new Exception("未知的指令或错误的数据格式:" + token);
@@ -436,58 +419,13 @@ namespace ProtScript
             return retn;
 
         }
-        
-        public void Close()
-        {
-
-            br.Close();
-            fs.Close();
-        }
-
-        private void InitDic(string game) //SP CL
-        {
-
-            string[] dic = new string[0];
-            string path = Path.Combine("OPCODE", game + ".txt");
-            if (File.Exists(path))
-            {
-                dic = File.ReadAllLines(path);
-            }
-            else
-            {
-                throw new Exception("未找到指定游戏");
-            }
-            decompress_dic.Clear();
-            compress_dic.Clear();
-            if (dic.Length > 0)
-            {
-                if(dic[0].Trim() == ";Ver3")
-                {
-                    ScriptVersion = 3;
-                }
-                else if(dic[0].Trim() == ";Ver2")
-                {
-                    ScriptVersion = 2;
-                }
-            }
-            int i = 0;
-            foreach(string line in dic)
-            {
-                if (line.TrimStart()[0] == ';')
-                {
-                    continue;
-                }
-                decompress_dic.Add((byte)i, new ScriptOpcode((byte)i, line.Replace("\r", "")));
-                compress_dic.Add(decompress_dic[(byte)i].opcode, (byte)i);
-                i++;
-            }
-        }
-        
         public override void FileExport(string name)
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
             Decompile(name);
+            br.Close();
+            fs.Close();
         }
 
         public override void FileImport(string name)
@@ -495,6 +433,239 @@ namespace ProtScript
             //fs = new FileStream(name, FileMode.Open);
             //br = new BinaryReader(fs);
             Compile(name);
+        }
+        public ParamData[] ReadParamData(ref BinaryReader tbr, List<ParamType> param)
+        {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            List<string> retn = new List<string>();
+            List<ParamData> datas = new List<ParamData>();
+            int count = 0;
+            int curr_pos = (int)tbr.BaseStream.Position;
+            int tbr_len = (int)tbr.BaseStream.Length;
+            bool nullable_skip = false;
+            string data_str;
+            foreach (var value in param)
+            {
+                DataType type = value.type;
+                count++;
+                curr_pos = (int)tbr.BaseStream.Position;
+                switch (type)
+                {
+                    case DataType.Byte:
+                    case DataType.Byte2:
+                    case DataType.Byte3:
+                    case DataType.Byte4:
+                        {
+                            var data_bytes = tbr.ReadBytes((int)type);
+                            data_str = ScriptUtil.Byte2Hex(data_bytes);
+                            datas.Add(new ParamData(type, data_bytes, data_str));
+                            break;
+                        }
+                    case DataType.UInt16:
+                        if (value.nullable && curr_pos + 2 >= tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_uint16 = tbr.ReadUInt16();
+                        data_str = data_uint16.ToString();
+                        datas.Add(new ParamData(DataType.UInt16, data_uint16, data_str));
+                        break;
+                    case DataType.Int16:
+                        if (value.nullable && curr_pos + 2 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_int16 = tbr.ReadInt16();
+                        data_str = data_int16.ToString();
+                        datas.Add(new ParamData(DataType.Int16, data_int16, data_str));
+                        break;
+                    case DataType.UInt32:
+                        if (value.nullable && curr_pos + 4 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_uint32 = tbr.ReadUInt32();
+                        data_str = data_uint32.ToString();
+                        datas.Add(new ParamData(DataType.UInt32, data_uint32, data_str));
+                        break;
+                    case DataType.Int32:
+                        if (value.nullable && curr_pos + 4 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        var data_int32 = tbr.ReadInt32();
+                        data_str = data_int32.ToString();
+                        datas.Add(new ParamData(DataType.Int32, data_int32, data_str));
+                        break;
+                    case DataType.StringUnicode:
+                    case DataType.StringSJIS:
+                    case DataType.StringUTF8:
+                        {
+                            if (type == DataType.StringUnicode)
+                            {
+                                data_str = Encoding.Unicode.GetString(ReadStringDoubleEnd(ref tbr));
+                                datas.Add(new ParamData(DataType.StringUnicode, data_str, data_str));
+                            }
+                            else if (type == DataType.StringSJIS)
+                            {
+                                data_str = Encoding.GetEncoding("Shift-Jis").GetString(ReadStringSingleEnd(ref tbr));
+                                datas.Add(new ParamData(DataType.StringSJIS, data_str, data_str));
+                            }
+                            else if (type == DataType.StringUTF8)
+                            {
+                                data_str = Encoding.UTF8.GetString(ReadStringSingleEnd(ref tbr));
+                                datas.Add(new ParamData(DataType.StringUTF8, data_str, data_str));
+                            }
+
+                            break;
+                        }
+                    case DataType.LenStringUnicode:
+                    case DataType.LenStringSJIS:
+                        {
+                            if (value.nullable && curr_pos + 2 > tbr_len)
+                            {
+                                nullable_skip = true;
+                                break;
+                            }
+                            int len = tbr.ReadUInt16();
+                            if (type == DataType.LenStringUnicode)
+                            {
+                                data_str = Encoding.Unicode.GetString(tbr.ReadBytes(len * 2));
+                                datas.Add(new ParamData(DataType.LenStringUnicode, data_str, data_str));
+                            }
+                            else if (type == DataType.LenStringSJIS)
+                            {
+                                data_str = Encoding.GetEncoding("Shift-Jis").GetString(tbr.ReadBytes(len * 2));
+                                datas.Add(new ParamData(DataType.LenStringSJIS, data_str, data_str));
+                            }
+                            break;
+                        }
+                    case DataType.Position:
+                        if (value.nullable && curr_pos + 4 > tbr_len)
+                        {
+                            nullable_skip = true;
+                            break;
+                        }
+                        uint pos = tbr.ReadUInt32();
+                        if (code_position.ContainsKey(pos))
+                        {
+                            datas.Add(new ParamData(DataType.Position, pos, code_position[pos].ToString()));
+                        }
+                        else
+                        {
+                            throw new Exception("错误的跳转位置: " + pos + "！");
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            return datas.ToArray();
+        }
+
+        public static string[] ParamDataToArray(ParamData[] parameters)
+        {
+            List<string> retn = new List<string>();
+            string tmp = "";
+            foreach (var param in parameters)
+            {
+                DataType type = param.type;
+                switch (type)
+                {
+                    case DataType.Byte:
+                    case DataType.Byte2:
+                    case DataType.Byte3:
+                    case DataType.Byte4:
+                        tmp = "[" + param.valueString + "]";
+                        break;
+                    case DataType.UInt16:
+                        tmp = "(" + param.valueString + ")";
+                        break;
+                    case DataType.Int16:
+                        tmp = "(" + param.valueString + ")";
+                        break;
+                    case DataType.UInt32:
+                        tmp = "{" + param.valueString + "}";
+                        break;
+                    case DataType.Int32:
+                        tmp = "{" + param.valueString + "}";
+                        break;
+                    case DataType.StringUnicode:
+                        tmp = "$u\"" + param.valueString + "\"";
+                        break;
+                    case DataType.StringSJIS:
+                        tmp = "$j\"" + param.valueString + "\"";
+                        break;
+                    case DataType.StringUTF8:
+                        tmp = "$8\"" + param.valueString + "\"";
+                        break;
+                    case DataType.LenStringUnicode:
+                        tmp = "&u\"" + param.valueString + "\"";
+                        break;
+                    case DataType.LenStringSJIS:
+                        tmp = "&j\"" + param.valueString + "\"";
+                        break;
+                    case DataType.LenStringUTF8:
+                        tmp = "&8\"" + param.valueString + "\"";
+                        break;
+                    case DataType.Position:
+                        tmp = "<" + param.valueString + ">";
+                        break;
+                    default:
+                        break;
+                }
+                retn.Add(tmp.Replace("\n", @"\n"));
+            }
+
+            return retn.ToArray();
+        }
+
+        public static string ParamDataToString(ParamData[] parameters)
+        {
+            string retn = "";
+            foreach (var str in ParamDataToArray(parameters))
+            {
+                if (str != "")
+                {
+                    retn += str + " ";
+                }
+                else
+                {
+                    retn += "null" + " ";
+                }
+            }
+            if (retn.Length > 0)
+            {
+                retn = retn.Remove(retn.Length - 1);
+            }
+            return retn;
+        }
+        private static byte[] ReadStringDoubleEnd(ref BinaryReader tbr)
+        {
+            List<byte> buff = new List<byte>();
+            byte[] btmp = tbr.ReadBytes(2);
+            while (!(btmp[0] == 0x00 && btmp[1] == 0x00))
+            {
+                buff.AddRange(btmp);
+                btmp = tbr.ReadBytes(2);
+            }
+            return buff.ToArray();
+        }
+        private static byte[] ReadStringSingleEnd(ref BinaryReader tbr)
+        {
+            List<byte> buff = new List<byte>();
+            byte btmp = tbr.ReadByte();
+            while (btmp != 0x00)
+            {
+                buff.Add(btmp);
+                btmp = tbr.ReadByte();
+            }
+            return buff.ToArray();
         }
     }
 
