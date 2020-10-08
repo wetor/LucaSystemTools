@@ -12,7 +12,7 @@ namespace ProtImage
 {
     public class CZ1Parser : CZParserBase
     {
-        public Bitmap Export(byte[] Texture)
+        public Bitmap Export(byte[] Texture,string name="")
         {
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ1Header Header = new CZ1Header();
@@ -38,7 +38,7 @@ namespace ProtImage
                 }
 
                 //lmz解压
-                var bytes = Decompress(Reader);
+                var bytes = Decompress(Reader,name);
 
                 //解压后的像素
                 Queue<int> queue = new Queue<int>();

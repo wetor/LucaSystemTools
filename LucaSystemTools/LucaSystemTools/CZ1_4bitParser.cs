@@ -8,9 +8,14 @@ using System.Text;
 using LucaSystem;
 using LucaSystemTools;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace ProtImage
 {
+    /// <summary>
+    /// 根据psv flowers 春生成
+    /// 确认硬编码部分为 blockcount和每个block的compressedsize
+    /// </summary>
     public class CZ1_4bitParser : CZ1Parser
     {
         public byte color256to16(byte b)
@@ -31,10 +36,19 @@ namespace ProtImage
 
 
         List<byte> list = new List<byte>();
+        private int k;
+
         //作者：Wetor
         //时间：2019.1.18
         public void PngToCZ1(string outfile)
         {
+            CZOutputInfo czOutput = new CZOutputInfo();
+            string name = outfile.Replace(".png", "").Replace(".Png", "").Replace(".PNG", "") + ".json";
+            if (File.Exists(name))
+            {
+                czOutput = JsonConvert.DeserializeObject<CZOutputInfo>(File.ReadAllText(name));
+            }
+
             Bitmap Picture = new Bitmap(File.Open(outfile, FileMode.Open));
             StructWriter Writer = new StructWriter(File.Open(outfile + ".cz1", FileMode.Create));
             CZ1Header header;
@@ -131,81 +145,97 @@ namespace ProtImage
             //    queue.Enqueue(high4bit);
             //}
 
-            int file_num = bytes2.Length / 130554 + 1;
+            //int file_num = bytes2.Length / 130554 + 1;
             //System.Diagnostics.Debug.WriteLine("{0} {1} {2}", file_num, listBytes.Count, 130554);
-            List<int[]> out_list = new List<int[]>();
-            Writer.Write(file_num);
-            for (int k = 0; k < file_num; k++)
+            var ie = bytes2.ToList().GetEnumerator();
+            List<List<int>> out_list = LzwUtil.Compress(ie, 0xFEFD);
+
+            foreach (var item in out_list)
             {
-                List<int> listBytes = new List<int>();
-                StringBuilder decompressed = new StringBuilder();
-                byte[] tmp_bytes = new byte[130554];
-                if (k == file_num - 1)
-                    Array.Copy(bytes2, k * 130554, tmp_bytes, 0, bytes2.Length - k * 130554);
-                else
-                    Array.Copy(bytes2, k * 130554, tmp_bytes, 0, 130554);
-
-
-                foreach (char kk in tmp_bytes)
-                {
-                    decompressed.Append(kk);
-                }
-                listBytes = LzwUtil.Compress(decompressed.ToString());
-                out_list.Add(listBytes.ToArray());
-                Writer.Write(listBytes.Count);
-                //string tmp_str;
-                System.Diagnostics.Debug.WriteLine("{0}", k);
-                /*if (k== file_num - 1)
-                {
-                    tmp_list.AddRange(listBytes.GetRange(130554 / 2 * k, listBytes.Count - 130554 / 2 * k));
-                    tmp_list.Insert(0, 0);
-                    tmp_str = Decompress(tmp_list);
-                }
-                else
-                {
-                    tmp_list.AddRange(listBytes.GetRange(130554 / 2 * k, 130554 / 2));
-                    tmp_list.Insert(0, 0);
-                    tmp_str = Decompress(tmp_list);
-                }*/
-                if (k == file_num - 1)
-                {
-                    Writer.Write(bytes2.Length - k * 130554);
-                }
-                else
-                {
-                    Writer.Write(130554);
-                }
-                //Writer.Write(0xFFFD);
-
+                Console.WriteLine("add compressed count :" + item.Count);
+                Console.WriteLine(item.Count);
+                Console.WriteLine(LzwUtil.Decompress(item).Length);
             }
-            /*List<byte> output = new List<byte>();
-            string str = Decompress(listBytes);
-            foreach (var c in str)
+     
+            int file_num = out_list.Count;
+            Writer.Write(czOutput.filecount);
+            for (int k = 0; k < czOutput.filecount; k++)
             {
-                output.Add((byte)c);
-            }
-           // Writer.Write(output.ToArray());
-            System.Diagnostics.Debug.WriteLine(output.Count);*/
-
-            for (int k = 0; k < out_list.Count; k++)
-            {
-                for (int kk = 0; kk < out_list[k].Length; kk++)
+                if (k >= out_list.Count-1)
                 {
-                    Writer.Write((UInt16)out_list[k][kk]);
+                    Writer.Write((UInt32)0);
+                    Writer.Write((UInt32)0);
                 }
+                else
+                {
+                    Writer.Write(out_list[k].Count);
+                    Writer.Write(LzwUtil.Decompress(out_list[k]).Length);
+                    List<byte> bytes = new List<byte>();
+                    foreach (var item in out_list[k])
+                    {
+                        UInt16 bb = (UInt16)item;
+                        bytes.Add(BitConverter.GetBytes(bb)[0]);
+                        bytes.Add(BitConverter.GetBytes(bb)[1]);
+                    }
+                    //string tmp_str;
+                    System.Diagnostics.Debug.WriteLine("{0}", k);
+                }
+            }
 
+            int p = 0;
+            foreach (var blockinfo in czOutput.blockinfo)
+            {
+                if (out_list.Count - 1 >= p)
+                {
+                    for (int kk = 0; kk < out_list[p].Count; kk++)
+                    {
+                        Writer.Write((UInt16)out_list[p][kk]);
+                    }
+                    if (out_list[p].Count == blockinfo.CompressedSize)
+                    {
+                        Console.WriteLine("符合");
+                    }
+                    else
+                    {
+                        Int64 compressedcount = (Int64)out_list[p].Count - (Int64)blockinfo.CompressedSize;
+                        compressedcount = Math.Abs(compressedcount);
+                        Console.WriteLine("不符合补0-" + compressedcount);
+                        for (Int64 pp = 0; pp < compressedcount; pp++)
+                        {
+                            Writer.Write((UInt16)0);
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("不符合补0-" + blockinfo.CompressedSize);
+                    //整块补0
+                    for (Int64 pp = 0; pp < blockinfo.CompressedSize; pp++)
+                    {
+                        Writer.Write((UInt16)0);
+                    }
+                }
+                p++;
             }
             Writer.Close();
 
 
         }
 
-        public override void FileExport(string name, string outpath = null)
+        public void CZ1ToPng(string infile)
         {
-            CZ1ToPng(name);
+
         }
 
-        public override void FileImport(string name, string outpath = null)
+        public override void FileExport(string infile,string output=null)
+        {
+            BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
+            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length), infile);
+            texture.Save(infile + ".png", ImageFormat.Png);
+            br.Close();
+        }
+
+        public override void FileImport(string name, string output = null)
         {
             PngToCZ1(name);
         }
