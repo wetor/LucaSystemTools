@@ -15,19 +15,21 @@ namespace ProtScript.Entity
     public class CodeLine
     {
         // 行号
-        public int index { get; set; }
+        public int index;
         // 所在脚本位置
-        public int position { get; set; }
+        public int position;
         // opcode
-        public byte opcodeIndex { get; set; }
+        public byte opcodeIndex;
+        // 参数的已知类型
+        public ParamType[] paramTypes;
+        // 跳转参数的下标
+        private int gotoParamIndex { get; set; }
+
         [JsonProperty]
         public string opcode { get; set; }
-
         // 资源引用信息（待定）
         [JsonProperty]
         public CodeInfo info { get; set; }
-        // 参数的已知类型
-        public ParamType[] paramTypes { get; set; }
         // 实际参数列表
         [JsonProperty]
         public List<ParamData> paramDatas { get; set; }
@@ -37,16 +39,14 @@ namespace ProtScript.Entity
         // 目标标签
         [JsonProperty("goto")]
         public string gotoLabel { get; set; }
-        public int gotoParamIndex { get; set; }
         // 是否为跳转目标
         [JsonProperty]
         public bool isLabel { get; set; } = false;
+        // 标签名
         [JsonProperty]
         public string label { get; set; }
-        public CodeLine()
-        {
 
-        }
+        public CodeLine() {}
         public CodeLine(int index, int position)
         {
             this.index = index;
@@ -128,7 +128,6 @@ namespace ProtScript.Entity
                         readParam = true;
                         // i = }
                     }
-                    
                 }
                 else
                 {
@@ -141,6 +140,8 @@ namespace ProtScript.Entity
                             {
                                 isGoto = true;
                                 gotoLabel = tokens[++i];
+                                param = ScriptEntity.ToParamData("0", DataType.Position);
+                                paramDatas.Add(param);
                             }
                         }
                         break;
@@ -202,7 +203,7 @@ namespace ProtScript.Entity
         /// <param name="value"></param>
         public void SetGotoValue(int value)
         {
-            paramDatas[gotoParamIndex].SetValue((object)value);
+            paramDatas[gotoParamIndex].valueOp = (object)value;
         }
         /// <summary>
         /// 标准lua脚本

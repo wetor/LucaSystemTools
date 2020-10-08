@@ -50,25 +50,49 @@ namespace ProtScript
         // 位置，要跳转的行号（1开始）
         private Dictionary<uint, int> goto_position;
 
-        public ScriptParser(GameScript game, string custom_game = "")
+        private bool FormatOld = false;
+        private bool FormatLua = false;
+        private bool FormatLuaE = false;
+        private bool FormatJson = false;
+
+        public ScriptParser(GameScript game, string custom_game = "", 
+            bool oldFormat = false, 
+            bool lua = false,
+            bool luae = false,
+            bool json = false)
         {
             this.game = game;
-            // Decompile
-            code_bytes = new List<byte[]>();
-            code_position = new Dictionary<uint, int>();
+            this.FormatOld = oldFormat;
+            this.FormatLua = lua;
+            this.FormatLuaE = luae;
+            this.FormatJson = json;
+            if (oldFormat)
+            {
+                // Decompile
+                code_bytes = new List<byte[]>();
+                code_position = new Dictionary<uint, int>();
 
-            // Compile
-            goto_position = new Dictionary<uint, int>();
-            line_position = new List<uint>();
-            ScriptVersion = ScriptUtil.InitOpcodeDict(Path.Combine("OPCODE", game.ToString() + ".txt"), 
+                // Compile
+                goto_position = new Dictionary<uint, int>();
+                line_position = new List<uint>();
+            }
+            
+            if (game != GameScript.CUSTOM)
+            {
+                custom_game = Path.Combine("OPCODE", game.ToString() + ".txt");
+            }
+
+            ScriptVersion = ScriptUtil.InitOpcodeDict(custom_game, 
                 ref decompress_dic, ref compress_dic);
         }
-        public void Decompile(string path)
+        public void Decompile(string path, string outpath)
         {
+            fs = new FileStream(path, FileMode.Open);
+            br = new BinaryReader(fs);
             if (!CanRead()) return;
             code_bytes.Clear();
             code_position.Clear();
-            FileStream tfs = new FileStream(path + ".txt", FileMode.Create);
+            FileStream tfs = new FileStream(outpath, FileMode.Create);
             StreamWriter tsw = new StreamWriter(tfs, Encoding.UTF8);
             while (fs.Position < fs.Length)
             {
@@ -80,6 +104,8 @@ namespace ProtScript
             DecompileAllCode(ref tsw);
             tsw.Close();
             tfs.Close();
+            br.Close();
+            fs.Close();
         }
         private void DecompileAllCode(ref StreamWriter tsw)
         {
@@ -183,11 +209,11 @@ namespace ProtScript
             return retn;
         }
 
-        public void Compile(string path)
+        public void Compile(string path, string outpath)
         {
             FileStream ifs = new FileStream(path, FileMode.Open);
             StreamReader isr = new StreamReader(ifs);
-            FileStream ofs = new FileStream(path + ".scr", FileMode.Create);
+            FileStream ofs = new FileStream(outpath, FileMode.Create);
             BinaryWriter obw = new BinaryWriter(ofs);
             goto_position.Clear();
             line_position.Clear();
@@ -419,20 +445,70 @@ namespace ProtScript
             return retn;
 
         }
-        public override void FileExport(string name)
+        public override void FileExport(string path, string outpath = null)
         {
-            fs = new FileStream(name, FileMode.Open);
-            br = new BinaryReader(fs);
-            Decompile(name);
-            br.Close();
-            fs.Close();
-        }
 
-        public override void FileImport(string name)
+            string outfilepath = outpath;
+            if (FormatOld)
+            {
+                if (outfilepath == null)
+                    outfilepath = path + ".txt";
+                else if (FormatLua || FormatJson) // 同时导出两种格式，区分
+                    outfilepath += ".txt";
+                if (Path.GetExtension(outfilepath) != "txt")
+                    outfilepath += ".txt";
+                Decompile(path, outfilepath);
+            }
+            if(FormatLua || FormatLuaE || FormatJson)
+            {
+                ScriptReader scriptReader = new ScriptReader(path, decompress_dic, ScriptVersion);
+                scriptReader.ReadScript();
+                outfilepath = outpath;
+                if (FormatLua || FormatLuaE)
+                {
+                    if (outfilepath == null)
+                        outfilepath = path + ".lua";
+                    else if(FormatJson) // 同时导出两种格式，区分
+                        outfilepath += ".lua";
+                    if (Path.GetExtension(outfilepath) != "lua")
+                        outfilepath += ".lua";
+                    scriptReader.SaveLua(outfilepath, !FormatLuaE);
+                }
+                outfilepath = outpath;
+                if (FormatJson)
+                {
+                    if (outfilepath == null)
+                        outfilepath = path + ".json";
+                    else if (FormatLua) // 同时导出两种格式，区分
+                        outfilepath += ".json";
+                    if (Path.GetExtension(outfilepath) != "json") 
+                        outfilepath += ".json";
+                    scriptReader.SaveJson(outfilepath);
+                }
+                scriptReader.Close();
+            }
+        }
+        public override void FileImport(string path, string outpath = null)
         {
-            //fs = new FileStream(name, FileMode.Open);
-            //br = new BinaryReader(fs);
-            Compile(name);
+            if (outpath == null)
+            {
+                outpath = path + ".scr";
+            }
+            if(FormatJson || FormatLua)
+            {
+                ScriptWriter scriptWriter = new ScriptWriter(outpath, compress_dic);
+                if (FormatJson)
+                    scriptWriter.LoadJson(path);
+                else if(FormatLua)
+                    scriptWriter.LoadLua(path);
+
+                scriptWriter.WriteScript();
+                scriptWriter.Close();
+            }
+            else if (FormatOld)
+            {
+                Compile(path, outpath);
+            }
         }
         public ParamData[] ReadParamData(ref BinaryReader tbr, List<ParamType> param)
         {

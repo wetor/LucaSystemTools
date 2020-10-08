@@ -21,7 +21,6 @@ namespace ProtScript.Entity
         public uint toolVersion { get; set; } = Program.toolVersion;
         [JsonProperty("ScriptVersion")]
         public int version { get; set; } = 3;
-
         [JsonProperty("codes")]
         public List<CodeLine> lines { get; set; } = new List<CodeLine>();
 

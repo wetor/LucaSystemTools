@@ -283,14 +283,14 @@ namespace ProtImage
             br.Close();
         }
 
-        public override void FileExport(string name)
+        public override void FileExport(string path, string outpath = null)
         {
-            CZ1ToPng(name);
+            CZ1ToPng(path);
         }
 
-        public override void FileImport(string name)
+        public override void FileImport(string path, string outpath = null)
         {
-            PngToCZ1(name);
+            PngToCZ1(path);
         }
     }
 

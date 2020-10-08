@@ -26,15 +26,16 @@ namespace ProtScript
 
         private ScriptEntity script = new ScriptEntity();
 
-        public ScriptWriter(FileStream tfs, BinaryWriter tbw, Dictionary<byte, ScriptOpcode> dict)
+        public ScriptWriter(string outpath, Dictionary<string, byte> dict)
         {
-            fs = tfs;
-            bw = tbw;
-            foreach (KeyValuePair<byte, ScriptOpcode> kvp in dict)
-            {
-                opcodeDict.Add(kvp.Value.opcode, kvp.Key);
-            }
-            //opcodeDict = dict;
+            fs = new FileStream(outpath, FileMode.Create);
+            bw = new BinaryWriter(fs);
+            opcodeDict = dict;
+        }
+        public void Close()
+        {
+            bw.Close();
+            fs.Close();
         }
         public void WriteScript()
         {
@@ -61,6 +62,10 @@ namespace ProtScript
                 {
                     bw.Write(new byte[2]);//长度填充
                     bw.Write(opcodeDict[code.opcode]);
+                    if (code.opcode == "END")
+                    {
+                        code.info.count++;
+                    }
                     bw.Write(code.info.ToBytes());
                 }
                 foreach (var param in code.paramDatas)
@@ -99,7 +104,7 @@ namespace ProtScript
             }
 
         }
-        public void WriteParamData()
+        private void WriteParamData()
         {
             for (int line = 0; line < script.lines.Count; line++)
             {
@@ -126,9 +131,23 @@ namespace ProtScript
         public void LoadLua(string path)
         {
             StreamReader sr = new StreamReader(path, Encoding.UTF8);
+            script.lines.Clear();
+            script.toolVersion = uint.MaxValue;
+            if (sr.BaseStream.Length > 0)
+            {
+                string[] verstr = sr.ReadLine().Split(':');
+                if (verstr.Length == 2)
+                {
+                    script.toolVersion = Convert.ToUInt32(verstr[1].Trim());
+                }
+            }
+            if (script.toolVersion > Program.toolVersion)
+            {
+                throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
+            }
             while (sr.BaseStream.Position < sr.BaseStream.Length)
             {
-                new CodeLine(sr.ReadLine());
+                script.lines.Add(new CodeLine(sr.ReadLine()));
             }
             sr.Close();
         }

@@ -30,22 +30,21 @@ NS两款游戏脚本相关，看代码就行了~
 
 - air脚本的简单解析，psv的clannad应该同样适用，其中A3 A4结尾的为跳转指令，不写了，详情 [PSV AIR 汉化工具](https://github.com/YuriSizuku/GalgameReverse/blob/master/prototype/airpsv_text.py)
 
-**ScriptOpcode.cs**
+**Script\*\*\*\*\.cs**
 
-- opcode类，主要是用来解析已知参数的指令  
+- 脚本初步反汇编，支持修改然后汇编回去，文本增长、跳转判断均测试无问题  
+- 导出的格式有json、lua、txt等（lua不可执行）
 
-**ScriptParser.cs**
-
-- 脚本初步反汇编，支持修改然后汇编回去，文本增长什么的测试无问题（JUMP、GOTO等跳转指令未实际测试）  
-
-***Support Game***
+**内置支持游戏**
 >- 《Summer Pocket》Nintendo Switch  
 >- 《Clannad》Nintendo （Opcode未完善）  
 >- 《Tomoyo After Its a Wonderful Life CS Edition》Nintendo Switch  
 >- 《Flowers - Shiki》  
+>- 《Flowers 春》PSVita  
 >- 《ISLAND》Psvita  
+>- ...
 
-- 支持添加新的自定义Opcode文件，不同的游戏opcode、参数列表也不尽相同
+- 支持添加新的自定义Opcode文件，不同的游戏opcode、参数列表也不尽相同，理论支持绝大多数PSV、NS所有LucaSystem引擎的游戏
 
 ## 能做什么
 
@@ -59,19 +58,39 @@ NS两款游戏脚本相关，看代码就行了~
 
 - 支持psv的ISLAND脚本编译与反编译
 
-- 如果对**NS平台，此引擎**的一些游戏支持有问题，可以提交issues反馈
+- 如果对**PSV、NS平台，此引擎**的一些游戏支持有问题，可以提交issues反馈
 
 ## 使用说明
-<pre><code>
+```
 Options:
-  -o|--opcode-path OPCODE_PATH                  Script opcode ,For [scr]
-  -c|--custom-opcode-path CUSTOM_OPCODE_PATH    Script custom opcode ,For [scr]
-  -f|--file-name FILE_NAME                      FileName or FolderName
-  -t|--file-type FILE_TYPE                      FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]
-  -m|--parser-mode PARSER_MODE                 ParserMode [import] or [export]
+  -t|--file-type <FILE_TYPE>                    FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]
+  -m|--parser-mode <PARSER_MODE>                ParserMode [import] or [export]
+  -f|--file-name <FILE_NAME>                    FileName or FolderName
+  -o|--out-file-name <OUT_FILE_NAME>            OutFileName or OutFolderName
+  -opcode|--opcode-path <OPCODE_PATH>           Script opcode ,For [scr]
+  -c|--custom-opcode-path <CUSTOM_OPCODE_PATH>  Script custom opcode ,For [scr]
+  -tbl|--tblfile <TBLFILE>                      TBL filename ,For [scr]
+  -p|--pak-coding <PAK_CODING>                  Pakfile name coding ,For [pak]
+  -lua|--format-lua                             Export and import lua format script (Can import) ,For [scr]
+  -luae|--format-lua-export                     Export lua format script (Without param type, can't import) ,For [scr]
+  -json|--format-json                           Export and import json format script (Import priority json) ,For [scr]
+  -old|--format-old                             Use old format export and import ,For [scr]
   -d|--debug                                    Enable debug mode
   -l|--game-list                                Show list of supported games
   -oh|--opcode-help                             Show Opcode help
-  -p|--pak-coding                               Pak filename coding
   -?|-h|--help                                  Show help information
-</code></pre>
+```
+## Example
+### Script
+
+用txt、lua、json导出SummerPockets的一个脚本
+
+`LucaSystemTools -t scr -m export -f .\10_プロローグ0725 -o .\10_725 -opcode SP -old -lua -json`  
+输出文件：10_725.txt  10_725.lua   10_725.json  
+
+导入SummerPockets的一个脚本  
+`LucaSystemTools -t scr -m import -f .\10_725.json -o .\10_725.1 -opcode SP`  
+`LucaSystemTools -t scr -m import -f .\10_725.json -o .\10_725.2 -opcode SP -json`  
+`LucaSystemTools -t scr -m import -f .\10_725.lua -o .\10_725.3 -opcode SP -lua`  
+`LucaSystemTools -t scr -m import -f .\10_725.txt -o .\10_725.4 -opcode SP -old`  
+四种不同方式导入脚本  

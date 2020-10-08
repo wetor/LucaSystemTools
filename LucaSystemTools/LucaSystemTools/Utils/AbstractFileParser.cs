@@ -8,7 +8,7 @@ namespace LucaSystem
 {
     public abstract class AbstractFileParser
     {
-        public abstract void FileExport(string name);
-        public abstract void FileImport(string name);
+        public abstract void FileExport(string path, string outpath = null);
+        public abstract void FileImport(string path, string outpath = null);
     }
 }

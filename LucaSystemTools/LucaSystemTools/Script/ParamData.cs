@@ -15,6 +15,9 @@ namespace ProtScript.Entity
         [JsonProperty]
         [JsonConverter(typeof(StringEnumConverter))]
         public DataType type { get; set; }
+        /// <summary>
+        /// 设置value的set
+        /// </summary>
         [JsonProperty("value")]
         [JsonConverter(typeof(BytesConverter))]
         public object valueOp
@@ -52,11 +55,6 @@ namespace ProtScript.Entity
             this.value = value;
             this.bytes = bytes;
             this.valueString = valueString;
-        }
-        public void SetValue(object value)
-        {
-            this.value = value;
-            this.valueString = value.ToString();
         }
     }
 

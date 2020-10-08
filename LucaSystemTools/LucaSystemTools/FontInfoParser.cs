@@ -42,7 +42,7 @@ namespace ProtFont
 
         //作者：DeQxJ00
         //时间：2019.1.17
-        public override void FileExport(string file)
+        public override void FileExport(string file, string outpath = null)
         {
             
             string name = file;
@@ -236,7 +236,7 @@ namespace ProtFont
         /// 5.第2行不读
         /// </summary>
         /// <param name="name"></param>
-        public override void FileImport(string name)
+        public override void FileImport(string name, string outpath = null)
         {
            
             UInt16[,] listStrUnicodeHex = new UInt16[256, 256];

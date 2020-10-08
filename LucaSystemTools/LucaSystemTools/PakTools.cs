@@ -216,14 +216,14 @@ namespace ProtPak
             Arr = NArr;
         }
 
-        public override void FileExport(string name)
+        public override void FileExport(string path, string outpath = null)
         {
-            Unpack(name);
+            Unpack(path);
         }
 
-        public override void FileImport(string name)
+        public override void FileImport(string path, string outpath = null)
         {
-            Pack(name);
+            Pack(path);
         }
     }
 

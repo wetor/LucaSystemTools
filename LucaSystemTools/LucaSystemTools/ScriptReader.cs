@@ -27,12 +27,17 @@ namespace ProtScript
 
         private ScriptEntity script = new ScriptEntity();
 
-        public ScriptReader(FileStream tfs, BinaryReader tbr, Dictionary<byte, ScriptOpcode> dict, int version)
+        public ScriptReader(string path, Dictionary<byte, ScriptOpcode> dict, int version)
         {
-            fs = tfs;
-            br = tbr;
+            fs = new FileStream(path, FileMode.Open);
+            br = new BinaryReader(fs);
             opcodeDict = dict;
             script.version = version;
+        }
+        public void Close()
+        {
+            br.Close();
+            fs.Close();
         }
         public void ReadScript()
         {
@@ -51,7 +56,7 @@ namespace ProtScript
             }
         }
         
-        public void FixGotoPosition()
+        private void FixGotoPosition()
         {
             // 遍历行
             int id = 0;
@@ -77,11 +82,11 @@ namespace ProtScript
                 }
             }
         }
-        public CodeLine ReadCodeLine()
+        private CodeLine ReadCodeLine()
         {
             CodeLine code = new CodeLine(currentLine, (int)fs.Position);
             // 位置 下标
-            gotoPosLine.Add(code.position, currentLine);
+            gotoPosLine.Add((int)fs.Position, currentLine);
             int codeLength = 0;
             int codeOffset = 0;
 
@@ -198,18 +203,23 @@ namespace ProtScript
         public void SaveLua(string path, bool canLoad = true)
         {
             StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
-            foreach (var code in script.lines)
+            if (canLoad)
             {
-                if (canLoad)
+                sw.WriteLine("-- ToolVersion:{0}", Program.toolVersion);
+                foreach (var code in script.lines)
                 {
+
                     sw.WriteLine(code.ToStringAll());
                 }
-                else
+            }
+            else
+            {
+                foreach (var code in script.lines)
                 {
                     sw.WriteLine(code.ToString());
                 }
-
             }
+            
             sw.Close();
         }
         /// <summary>
@@ -219,7 +229,7 @@ namespace ProtScript
         /// <param name="codeLength">此指令长度</param>
         /// <param name="codeOffset">当前位置引用</param>
         /// <returns></returns>
-        public List<ParamData> ReadParamData(ParamType[] param, int codeLength, ref int codeOffset)
+        private List<ParamData> ReadParamData(ParamType[] param, int codeLength, ref int codeOffset)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             List<string> retn = new List<string>();

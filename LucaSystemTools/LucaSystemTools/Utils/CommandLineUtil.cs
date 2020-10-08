@@ -16,6 +16,53 @@ namespace LucaSystem.Utils
     [Command(ExtendedHelpText = @"help text")]
     class CommandLineUtil
     {
+
+
+        [Option(Description = "FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]", ShortName = "t")]
+        public string FileType { get; set; }
+
+        [Option(Description = "ParserMode [import] or [export]", ShortName = "m")]
+        public string ParserMode { get; set; }
+
+        [Option(Description = "FileName or FolderName", ShortName = "f")]
+        public string FileName { get; set; }
+
+        [Option(Description = "OutFileName or OutFolderName", ShortName = "o")]
+        public string OutFileName { get; set; } = null;
+
+        [Option(Description = "Script opcode ,For [scr]", ShortName = "opcode")]
+        public string OpcodePath { get; set; }
+
+        [Option(Description = "Script custom opcode ,For [scr]", ShortName = "c")]
+        public string CustomOpcodePath { get; set; }
+
+        [Option(Description = "TBL filename ,For [scr]", ShortName = "tbl")]
+        public string TBLFile { get; set; }
+
+        [Option(Description = "Pakfile name coding ,For [pak]", ShortName = "p")]
+        public string PakCoding { get; set; }
+
+
+        [Option("-lua|--format-lua", "Export and import lua format script (Can import) ,For [scr]", CommandOptionType.NoValue)]
+        public bool FormatLua { get; set; } = false;
+        [Option("-luae|--format-lua-export", "Export lua format script (Without param type, can't import) ,For [scr]", CommandOptionType.NoValue)]
+        public bool FormatLuaE { get; set; } = false;
+        [Option("-json|--format-json", "Export and import json format script (Import priority json) ,For [scr]", CommandOptionType.NoValue)]
+        public bool FormatJson { get; set; } = false;
+        [Option("-old|--format-old", "Use old format export and import ,For [scr]", CommandOptionType.NoValue)]
+        public bool FormatOld { get; set; } = false;
+
+        [Option("-d|--debug", "Enable debug mode", CommandOptionType.NoValue)]
+        public bool Debug { get; set; }
+
+        
+
+        [Option("-l|--game-list", "Show list of supported games", CommandOptionType.NoValue)]
+        public bool GameList { get; set; }
+
+        [Option("-oh|--opcode-help", "Show Opcode help", CommandOptionType.NoValue)]
+        public bool OpcodeHelp { get; set; }
+
         public void OnExecute()
         {
             if (Debug)
@@ -65,15 +112,25 @@ namespace LucaSystem.Utils
                         selclass = new FontInfoParser();
                         break;
                     case "scr":
+                        if(!FormatOld && !FormatLua && !FormatLuaE && !FormatJson)
+                        {
+                            FormatJson = true;
+                        }
+                        if(FormatLua && FormatLuaE)
+                        {
+                            FormatLuaE = false; // 优先能导入
+                        }
                         if (!string.IsNullOrEmpty(CustomOpcodePath))
                         {
-                            selclass = new ScriptParser(GameScript.CUSTOM, CustomOpcodePath);
+                            selclass = new ScriptParser(GameScript.CUSTOM, CustomOpcodePath, 
+                                FormatOld, FormatLua, FormatLuaE,FormatJson);
                         }
                         else if (!string.IsNullOrEmpty(OpcodePath))
                         {
                             if (OpcodePath != "CUSTOM")
                             {
-                                selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true));
+                                selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true),"", 
+                                    FormatOld, FormatLua, FormatLuaE,FormatJson);
                             }
                         }
                         else
@@ -92,11 +149,11 @@ namespace LucaSystem.Utils
 
                 if (ParserMode.ToLower() == "import" || ParserMode.ToLower() == "i")
                 {
-                    selclass.FileImport(FileName);
+                    selclass.FileImport(FileName, OutFileName);
                 }
                 else if (ParserMode.ToLower() == "export" || ParserMode.ToLower() == "e")
                 {
-                    selclass.FileExport(FileName);
+                    selclass.FileExport(FileName, OutFileName);
                 }
                 else
                 {
@@ -141,34 +198,9 @@ CUSTOM          Read custom Opcode file. Path: OPCODE/{CUSTOM}.txt
 
         }
 
-        [Option(Description = "Pakfile name coding ,For [pak]", ShortName = "p")]
-        public string PakCoding { get; set; }
 
-        [Option(Description = "Script opcode ,For [scr]", ShortName = "o")]
-        public string OpcodePath { get; set; }
 
-        [Option(Description = "Script custom opcode ,For [scr]", ShortName = "c")]
-        public string CustomOpcodePath { get; set; }
-
-        [Option(Description = "FileName or FolderName", ShortName = "f")]
-        public string FileName { get; set; }
-
-        [Option(Description = "FileType [cz0] [cz1] [cz3] [cz4] [dat] [pak] [psb] [info] [scr]", ShortName = "t")]
-        public string FileType { get; set; }
-
-        [Option(Description = "ParserMode [import] or [export]", ShortName = "m")]
-        public string ParserMode { get; set; }
-
-        [Option("-d|--debug", "Enable debug mode", CommandOptionType.NoValue)]
-        public bool Debug { get; set; }
-
-        [Option("-l|--game-list", "Show list of supported games", CommandOptionType.NoValue)]
-        public bool GameList { get; set; }
-        [Option("-oh|--opcode-help", "Show Opcode help", CommandOptionType.NoValue)]
-        public bool OpcodeHelp { get; set; }
-
-        [Option(Description = "TBL filename", ShortName = "tbl")]
-        public string TBLFile { get; set; }
+ 
 
     }
 }

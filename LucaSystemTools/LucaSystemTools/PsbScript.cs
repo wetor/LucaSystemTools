@@ -169,14 +169,14 @@ namespace RealLive
             return bytes.ToString("X2");
         }
 
-        public override void FileExport(string name)
+        public override void FileExport(string name, string outpath = null)
         {
             fs = new FileStream(name, FileMode.Open);
             br = new BinaryReader(fs);
             DeCompress(name);
         }
 
-        public override void FileImport(string name)
+        public override void FileImport(string name, string outpath = null)
         {
             //Compress();
         }

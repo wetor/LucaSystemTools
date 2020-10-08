@@ -8,12 +8,12 @@ namespace LucaSystemTools
 {
     public class CZParserBase: AbstractFileParser
     {
-        public override void FileExport(string name)
+        public override void FileExport(string path, string outpath = null)
         {
             throw new NotImplementedException();
         }
 
-        public override void FileImport(string name)
+        public override void FileImport(string path, string outpath = null)
         {
             throw new NotImplementedException();
         }
