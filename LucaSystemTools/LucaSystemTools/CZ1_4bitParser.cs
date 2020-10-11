@@ -24,7 +24,7 @@ namespace ProtImage
             byte min = 0xFF;
             for (int i = 0; i < list.Count; i++)
             {
-                byte tmp=(byte)Math.Abs(b - list[i]);
+                byte tmp = (byte)Math.Abs(b - list[i]);
                 if (tmp < min)
                 {
                     min = tmp;
@@ -60,7 +60,7 @@ namespace ProtImage
             Writer.WriteStruct(ref header);
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
 
-
+            
             Pixel32 Pixel = new Pixel32();
             Pixel.R = 255;
             Pixel.G = 255;
@@ -81,7 +81,7 @@ namespace ProtImage
             //FF FF FF DB
             //FF FF FF EC
             //FF FF FF FF
-          
+
 
             Pixel.A = (byte)0x00; list.Add(Pixel.A);
             Writer.WriteStruct(ref Pixel);
@@ -128,25 +128,18 @@ namespace ProtImage
                 }
             }
 
-            byte[] bytes2 = new byte[Picture.Height * Picture.Width/2];
-           
-            for (int j = 0; j < bytes2.Length; j++)
+            byte[] bytes2 = new byte[Picture.Height * Picture.Width];
+
+            for (int j = 0; j < bytes2.Length / 2; j++)
             {
                 var low4bit = queue.Dequeue();
                 var high4bit = queue.Dequeue();
-                var b =  (uint)(high4bit << 4)+ (uint)low4bit;
+                var b = (uint)(high4bit << 4) + (uint)low4bit;
                 bytes2[j] = (byte)b;
             }
-            //foreach (var b in bytes2)
-            //{
-            //    int low4bit = b & 0x0F;
-            //    int high4bit = (b & 0xF0) >> 4;
-            //    queue.Enqueue(low4bit);
-            //    queue.Enqueue(high4bit);
-            //}
 
-            //int file_num = bytes2.Length / 130554 + 1;
-            //System.Diagnostics.Debug.WriteLine("{0} {1} {2}", file_num, listBytes.Count, 130554);
+        
+
             var ie = bytes2.ToList().GetEnumerator();
             List<List<int>> out_list = LzwUtil.Compress(ie, 0xFEFD);
 
@@ -156,67 +149,134 @@ namespace ProtImage
                 Console.WriteLine(item.Count);
                 Console.WriteLine(LzwUtil.Decompress(item).Length);
             }
-     
-            int file_num = out_list.Count;
-            Writer.Write(czOutput.filecount);
-            for (int k = 0; k < czOutput.filecount; k++)
+
+
+
+        //for (int k = 0; k < out_list.Count; k++)
+        //{
+        //    Writer.Write(out_list[k].Count);
+        //    Writer.Write(LzwUtil.Decompress(out_list[k]).Length);
+        //    List<byte> bytes = new List<byte>();
+        //    foreach (var item in out_list[k])
+        //    {
+        //        UInt16 bb = (UInt16)item;
+        //        bytes.Add(BitConverter.GetBytes(bb)[0]);
+        //        bytes.Add(BitConverter.GetBytes(bb)[1]);
+        //    }
+        //    //string tmp_str;
+        //    System.Diagnostics.Debug.WriteLine("{0}", k);
+        //}
+        int file_num = out_list.Count;
+            Writer.Write(out_list.Count);
+
+            for (int k = 0; k < out_list.Count; k++)
             {
-                if (k >= out_list.Count-1)
-                {
-                    Writer.Write((UInt32)0);
-                    Writer.Write((UInt32)0);
-                }
-                else
-                {
+                //if (k >= out_list.Count - 1)
+                //{
+                //    Writer.Write((UInt32)0);
+                //    Writer.Write((UInt32)0);
+                //}
+                //else
+                //{
                     Writer.Write(out_list[k].Count);
                     Writer.Write(LzwUtil.Decompress(out_list[k]).Length);
-                    List<byte> bytes = new List<byte>();
-                    foreach (var item in out_list[k])
-                    {
-                        UInt16 bb = (UInt16)item;
-                        bytes.Add(BitConverter.GetBytes(bb)[0]);
-                        bytes.Add(BitConverter.GetBytes(bb)[1]);
-                    }
+                    //List<byte> bytes = new List<byte>();
+                    //foreach (var item in out_list[k])
+                    //{
+                    //    UInt16 bb = (UInt16)item;
+                    //    bytes.Add(BitConverter.GetBytes(bb)[0]);
+                    //    bytes.Add(BitConverter.GetBytes(bb)[1]);
+                    //}
                     //string tmp_str;
                     System.Diagnostics.Debug.WriteLine("{0}", k);
+                //}
+            }
+
+            //Writer.Write(czOutput.filecount);
+            //for (int k = 0; k < czOutput.filecount; k++)
+            //{
+            //    if (k >= out_list.Count - 1)
+            //    {
+            //        Writer.Write((UInt32)0);
+            //        Writer.Write((UInt32)0);
+            //    }
+            //    else
+            //    {
+            //        Writer.Write(out_list[k].Count);
+            //        Writer.Write(LzwUtil.Decompress(out_list[k]).Length);
+            //        //List<byte> bytes = new List<byte>();
+            //        //foreach (var item in out_list[k])
+            //        //{
+            //        //    UInt16 bb = (UInt16)item;
+            //        //    bytes.Add(BitConverter.GetBytes(bb)[0]);
+            //        //    bytes.Add(BitConverter.GetBytes(bb)[1]);
+            //        //}
+            //        //string tmp_str;
+            //        System.Diagnostics.Debug.WriteLine("{0}", k);
+            //    }
+            //}
+            uint totalsize_new = 0x10 + 4 * 16 + 4 + (uint)file_num * 4 * 2;
+            uint totalsize_org = 0x10 + 4 * 16 + 4 + czOutput.filecount * 4 * 2;
+            for (int k = 0; k < out_list.Count; k++)
+            {
+                for (int kk = 0; kk < out_list[k].Count; kk++)
+                {
+                    Writer.Write((UInt16)out_list[k][kk]);
+                    totalsize_new += 2;
                 }
             }
 
-            int p = 0;
-            foreach (var blockinfo in czOutput.blockinfo)
+            totalsize_org += czOutput.TotalCompressedSize*2;
+            int diff = (int) (totalsize_org- totalsize_new);
+
+            if (diff > 0)
             {
-                if (out_list.Count - 1 >= p)
+                diff = diff / 2;
+                for (uint j = 0; j < diff; j++)
                 {
-                    for (int kk = 0; kk < out_list[p].Count; kk++)
-                    {
-                        Writer.Write((UInt16)out_list[p][kk]);
-                    }
-                    if (out_list[p].Count == blockinfo.CompressedSize)
-                    {
-                        Console.WriteLine("符合");
-                    }
-                    else
-                    {
-                        Int64 compressedcount = (Int64)out_list[p].Count - (Int64)blockinfo.CompressedSize;
-                        compressedcount = Math.Abs(compressedcount);
-                        Console.WriteLine("不符合补0-" + compressedcount);
-                        for (Int64 pp = 0; pp < compressedcount; pp++)
-                        {
-                            Writer.Write((UInt16)0);
-                        }
-                    }
+                    Writer.Write((UInt16)0);
                 }
-                else
-                {
-                    Console.WriteLine("不符合补0-" + blockinfo.CompressedSize);
-                    //整块补0
-                    for (Int64 pp = 0; pp < blockinfo.CompressedSize; pp++)
-                    {
-                        Writer.Write((UInt16)0);
-                    }
-                }
-                p++;
             }
+            else
+            {
+                Console.WriteLine("超长");
+            }
+
+            //int p = 0;
+            //foreach (var blockinfo in czOutput.blockinfo)
+            //{
+            //    if (out_list.Count - 1 >= p)
+            //    {
+            //        for (int kk = 0; kk < out_list[p].Count; kk++)
+            //        {
+            //            Writer.Write((UInt16)out_list[p][kk]);
+            //        }
+            //        if (out_list[p].Count == blockinfo.CompressedSize)
+            //        {
+            //            Console.WriteLine("符合");
+            //        }
+            //        else
+            //        {
+            //            Int64 compressedcount = (Int64)out_list[p].Count - (Int64)blockinfo.CompressedSize;
+            //            compressedcount = Math.Abs(compressedcount);
+            //            Console.WriteLine("不符合补0-" + compressedcount);
+            //            for (Int64 pp = 0; pp < compressedcount; pp++)
+            //            {
+            //                Writer.Write((UInt16)0);
+            //            }
+            //        }
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine("不符合补0-" + blockinfo.CompressedSize);
+            //        //整块补0
+            //        for (Int64 pp = 0; pp < blockinfo.CompressedSize; pp++)
+            //        {
+            //            Writer.Write((UInt16)0);
+            //        }
+            //    }
+            //    p++;
+            //}
             Writer.Close();
 
 
