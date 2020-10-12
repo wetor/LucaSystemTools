@@ -154,6 +154,7 @@ namespace ProtScript.Entity
                 case DataType.StringUnicode:
                 case DataType.StringSJIS:
                 case DataType.StringUTF8:
+                case DataType.StringCustom:
                     if (type == DataType.StringUnicode)
                     {
                         dataBytes.AddRange(Encoding.Unicode.GetBytes(data));
@@ -178,6 +179,8 @@ namespace ProtScript.Entity
                     break;
                 case DataType.LenStringUnicode:
                 case DataType.LenStringSJIS:
+                case DataType.LenStringUTF8:
+                case DataType.LenStringCustom:
                     dataBytes.AddRange(BitConverter.GetBytes((UInt16)data.Length));
                     if (type == DataType.LenStringUnicode)
                     {
