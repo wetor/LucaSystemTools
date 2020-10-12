@@ -470,7 +470,7 @@ namespace ProtScript
                         outfilepath = path + ".lua";
                     else if(FormatJson) // 同时导出两种格式，区分
                         outfilepath += ".lua";
-                    if (Path.GetExtension(outfilepath) != "lua")
+                    if (Path.GetExtension(outfilepath) != ".lua")
                         outfilepath += ".lua";
                     scriptReader.SaveLua(outfilepath, !FormatLuaE);
                 }
@@ -481,7 +481,7 @@ namespace ProtScript
                         outfilepath = path + ".json";
                     else if (FormatLua) // 同时导出两种格式，区分
                         outfilepath += ".json";
-                    if (Path.GetExtension(outfilepath) != "json") 
+                    if (Path.GetExtension(outfilepath) != ".json") 
                         outfilepath += ".json";
                     scriptReader.SaveJson(outfilepath);
                 }
