@@ -5,13 +5,13 @@ EQUV
 ADD
 VARSTR
 SET
-GOTO
-ONGOTO
+GOTO (Position)
+ONGOTO (StringSJIS, Position, !Position,!Position,!Position)
 GOSUB
-IFY
-IFN
+IFY (StringSJIS, Position)
+IFN (StringSJIS, Position)
 RETURN
-JUMP
+JUMP(StringSJIS)
 FARCALL
 FARRETURN
 END
@@ -20,7 +20,7 @@ CNUM_TALKNAME_SET
 ARFLAGSET
 TALK (Byte, UInt16,UInt16,UInt16,StringSJIS)
 TALK2 (Byte, UInt16,UInt16,StringSJIS)
-SELECT
+SELECT(UInt16,UInt16,UInt16,StringSJIS)
 CLOSE
 VOICE (Byte, UInt16,UInt16,UInt16,StringSJIS)
 WAIT

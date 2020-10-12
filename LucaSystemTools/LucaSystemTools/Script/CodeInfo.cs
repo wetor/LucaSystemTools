@@ -21,10 +21,13 @@ namespace ProtScript.Entity
             this.count = count;
             data = null;
         }
-        public byte[] ToBytes()
+        public byte[] ToBytes(int version = 3)
         {
             List<byte> bytes = new List<byte>();
-            bytes.Add((byte)count);
+            if (version == 3)
+            {
+                bytes.Add((byte)count);
+            }
             foreach (var num in data)
             {
                 bytes.AddRange(BitConverter.GetBytes(num));

@@ -22,8 +22,6 @@ namespace ProtScript.Entity
         public byte opcodeIndex;
         // 参数的已知类型
         public ParamType[] paramTypes;
-        // 跳转参数的下标
-        private int gotoParamIndex { get; set; }
 
         [JsonProperty]
         public string opcode { get; set; }
@@ -35,10 +33,7 @@ namespace ProtScript.Entity
         public List<ParamData> paramDatas { get; set; }
         // 是否存在Position参数
         [JsonProperty]
-        public bool isGoto { get; set; } = false;
-        // 目标标签
-        [JsonProperty("goto")]
-        public string gotoLabel { get; set; }
+        public bool isPosition { get; set; } = false;
         // 是否为跳转目标
         [JsonProperty]
         public bool isLabel { get; set; } = false;
@@ -98,6 +93,7 @@ namespace ProtScript.Entity
 
             paramDatas = new List<ParamData>();
             bool readParam = false;
+            string tempStr = "";
             i = 0;
             while (i < tokens.Count)
             {
@@ -134,16 +130,6 @@ namespace ProtScript.Entity
                     ParamData param = new ParamData();
                     if (tokens[i] == ")")
                     {
-                        if (i + 2 < tokens.Count) // goto
-                        {
-                            if (tokens[++i] == "goto")
-                            {
-                                isGoto = true;
-                                gotoLabel = tokens[++i];
-                                param = ScriptEntity.ToParamData("0", DataType.Position);
-                                paramDatas.Add(param);
-                            }
-                        }
                         break;
                     }
                     else if (tokens[i] == "(")
@@ -153,7 +139,13 @@ namespace ProtScript.Entity
                         i++;
                         if (tokens[i][0] == '\"')
                         {
-                            param = ScriptEntity.ToParamData(tokens[i].Substring(1, tokens[i].Length - 2), type);
+                            tempStr = tokens[i].Substring(1, tokens[i].Length - 2);
+                            param = ScriptEntity.ToParamData(tempStr, type);
+                            if (type == DataType.Position)
+                            {
+                                isPosition = true;
+                                param.valueOp = tempStr;
+                            }
                         }
                         else
                         {
@@ -176,15 +168,6 @@ namespace ProtScript.Entity
             }
         }
         /// <summary>
-        /// 此语句包含跳转，设置跳转参数的下标
-        /// </summary>
-        /// <param name="paramIndex"></param>
-        public void SetGoto(int paramIndex)
-        {
-            isGoto = true;
-            gotoParamIndex = paramIndex;
-        }
-        /// <summary>
         /// 此语句为跳转目标，设置唯一id
         /// </summary>
         /// <param name="name"></param>
@@ -192,18 +175,6 @@ namespace ProtScript.Entity
         {
             isLabel = true;
             label = name;
-        }
-        public ParamData GetGoto()
-        {
-            return paramDatas[gotoParamIndex];
-        }
-        /// <summary>
-        /// 修改跳转参数值
-        /// </summary>
-        /// <param name="value"></param>
-        public void SetGotoValue(int value)
-        {
-            paramDatas[gotoParamIndex].valueOp = (object)value;
         }
         /// <summary>
         /// 标准lua脚本
@@ -223,17 +194,17 @@ namespace ProtScript.Entity
                 {
                     codeStr += ", " + "\"" + param.valueString.Replace("\n", @"\n") + "\"";
                 }
-                else if (param.type != DataType.Position)
+                else if (param.type == DataType.Position)
+                {
+                    codeStr += ", " + "\"" + param.valueString + "\"";
+                }
+                else
                 {
                     codeStr += ", " + param.valueString;
                 }
 
             }
             codeStr += ")";
-            if (isGoto)
-            {
-                codeStr += " goto " + gotoLabel;
-            }
             return codeStr;
 
         }
@@ -288,17 +259,13 @@ namespace ProtScript.Entity
                         codeStr += ", " + "(&8)\"" + param.valueString.Replace("\n", @"\n") + "\"";
                         break;
                     case DataType.Position:
-                        //codeStr += ", (flag)" + param.valueString;
+                        codeStr += ", (label)\"" + param.valueString + "\"";
                         break;
                     default:
                         break;
                 }
             }
             codeStr += ")";
-            if (isGoto)
-            {
-                codeStr += " goto " + gotoLabel;
-            }
 
             return codeStr;
         }

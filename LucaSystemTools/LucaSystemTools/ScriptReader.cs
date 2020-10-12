@@ -55,18 +55,44 @@ namespace ProtScript
                 }
             }
         }
-        
+        public void ReadScript_Clear()
+        {
+            script.lines.Clear();
+        }
+        public bool ReadScript_CanStepRead()
+        {
+            return fs.Position < fs.Length;
+        }
+        public void ReadScript_Seek(int step)
+        {
+            fs.Seek(step,SeekOrigin.Current);
+        }
+        public CodeLine ReadScript_StepRead(out int position, out int length)
+        {
+            position = (int)fs.Position;
+            CodeLine code = ReadCodeLine();
+            length = (int)fs.Position - position;
+            return code;
+        }
+        public void ReadScript_SetCodeLine(CodeLine code)
+        {
+            script.lines.Add(code);
+        }
+        public void ReadScript_ReadOver()
+        {
+            FixGotoPosition();
+        }
         private void FixGotoPosition()
         {
             // 遍历行
             int id = 0;
             for (int line = 0; line < script.lines.Count; line++) 
             {
-                if (script.lines[line].isGoto)
+                /*if (script.lines[line].isGoto)
                 {
                     int pos = (int)(uint)script.lines[line].GetGoto().value;
                     script.lines[line].SetGotoValue(gotoPosLine[pos]);
-                }
+                }*/
                 if (labelPos.Contains(script.lines[line].position))
                 {
                     script.lines[line].SetLabel("label_" + id);
@@ -75,18 +101,29 @@ namespace ProtScript
             }
             for (int line = 0; line < script.lines.Count; line++)
             {
-                if (script.lines[line].isGoto)
+                if (script.lines[line].isPosition)
                 {
-                    int pos = (int)script.lines[line].GetGoto().value;
-                    script.lines[line].gotoLabel = script.lines[pos].label;
+                    for (int index = 0; index < script.lines[line].paramDatas.Count; index++)
+                    {
+                        if (script.lines[line].paramDatas[index].type == DataType.Position)
+                        {
+                            int pos = (int)(uint)script.lines[line].paramDatas[index].value;
+                            script.lines[line].paramDatas[index].valueOp = script.lines[gotoPosLine[pos]].label;
+                        }
+                    }
+   
                 }
             }
         }
         private CodeLine ReadCodeLine()
         {
             CodeLine code = new CodeLine(currentLine, (int)fs.Position);
-            // 位置 下标
-            gotoPosLine.Add((int)fs.Position, currentLine);
+            if (!gotoPosLine.ContainsKey((int)fs.Position))
+            {
+                // 位置 下标
+                gotoPosLine.Add((int)fs.Position, currentLine);
+            }
+            
             int codeLength = 0;
             int codeOffset = 0;
 
@@ -179,15 +216,13 @@ namespace ProtScript
             }
 
             // 判断是否含跳转
-            int index = 0;
             foreach (var param in code.paramDatas)
             {
-                if (param.type == DataType.Position)
+                if(param.type == DataType.Position)
                 {
-                    code.SetGoto(index);
+                    code.isPosition = true;
                     labelPos.Add((int)(uint)param.value);
                 }
-                index++;
             }
             currentLine++;
             return code;
@@ -206,6 +241,7 @@ namespace ProtScript
             if (canLoad)
             {
                 sw.WriteLine("-- ToolVersion:{0}", Program.toolVersion);
+                sw.WriteLine("-- GameVersion:{0}", script.version);
                 foreach (var code in script.lines)
                 {
 
@@ -248,6 +284,11 @@ namespace ProtScript
                     case DataType.Byte2:
                     case DataType.Byte3:
                     case DataType.Byte4:
+                        if (value.nullable && codeOffset + (int)type > codeLength)
+                        {
+                            nullableSkip = true;
+                            break;
+                        }
                         var dataBytes = br.ReadBytes((int)type);
                         dataStr = ScriptUtil.Byte2Hex(dataBytes, false, true);
                         datas.Add(new ParamData(type, dataBytes, dataStr));

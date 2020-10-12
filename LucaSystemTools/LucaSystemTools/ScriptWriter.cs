@@ -57,6 +57,7 @@ namespace ProtScript
                 {
                     bw.Write(opcodeDict[code.opcode]);
                     bw.Write((byte)0x00);//长度填充
+                    bw.Write(code.info.ToBytes(2));
                 }
                 else if(script.version == 3)
                 {
@@ -70,9 +71,9 @@ namespace ProtScript
                 }
                 foreach (var param in code.paramDatas)
                 {
-                    if(code.isGoto && param.type == DataType.Position)
+                    if(code.isPosition && param.type == DataType.Position)
                     {
-                        dictGoto.Add((int)fs.Position, code.gotoLabel);
+                        dictGoto.Add((int)fs.Position, param.valueString);
                         bw.Write(param.bytes);
                     }
                     else
@@ -140,14 +141,20 @@ namespace ProtScript
                 {
                     script.toolVersion = Convert.ToUInt32(verstr[1].Trim());
                 }
+                verstr = sr.ReadLine().Split(':');
+                if (verstr.Length == 2)
+                {
+                    script.version = Convert.ToInt32(verstr[1].Trim());
+                }
             }
             if (script.toolVersion > Program.toolVersion)
             {
                 throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
             }
-            while (sr.BaseStream.Position < sr.BaseStream.Length)
+            string line = "";
+            while ((line = sr.ReadLine()) != null)
             {
-                script.lines.Add(new CodeLine(sr.ReadLine()));
+                script.lines.Add(new CodeLine(line));
             }
             sr.Close();
         }

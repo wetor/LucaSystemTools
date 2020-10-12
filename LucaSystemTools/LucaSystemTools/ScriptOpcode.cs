@@ -53,6 +53,10 @@ namespace ProtScript
         public byte opcode_byte = 127;
         public List<ParamType> param = new List<ParamType>();
 
+        public ScriptOpcode(byte opcode_byte)
+        {
+            this.opcode_byte = opcode_byte;
+        }
         public ScriptOpcode(byte opcode_byte, string text)
         {
             this.opcode_byte = opcode_byte;

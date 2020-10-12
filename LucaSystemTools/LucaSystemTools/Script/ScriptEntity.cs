@@ -55,10 +55,13 @@ namespace ProtScript.Entity
                     param = new ParamData(type, dataInt16, dataBytes, data);
                     break;
                 case DataType.UInt32:
-                case DataType.Position:
                     var dataUint32 = Convert.ToUInt32(data);
                     dataBytes = BitConverter.GetBytes(dataUint32);
                     param = new ParamData(type, dataUint32, dataBytes, data);
+                    break;
+                case DataType.Position:
+                    dataBytes = BitConverter.GetBytes((UInt32)0);
+                    param = new ParamData(type, (UInt32)0, dataBytes, data);
                     break;
                 case DataType.Int32:
                     var dataInt32 = Convert.ToInt32(data);
@@ -130,6 +133,8 @@ namespace ProtScript.Entity
                     return DataType.LenStringSJIS;
                 case "&8":
                     return DataType.LenStringUTF8;
+                case "label":
+                    return DataType.Position;
                 default:
                     return DataType.Null;
             }
