@@ -127,12 +127,16 @@ namespace ProtScript.Entity
                     return DataType.StringSJIS;
                 case "$8":
                     return DataType.StringUTF8;
+                case "$c":
+                    return DataType.StringCustom;
                 case "&u":
                     return DataType.LenStringUnicode;
                 case "&j":
                     return DataType.LenStringSJIS;
                 case "&8":
                     return DataType.LenStringUTF8;
+                case "&c":
+                    return DataType.LenStringCustom;
                 case "label":
                     return DataType.Position;
                 default:

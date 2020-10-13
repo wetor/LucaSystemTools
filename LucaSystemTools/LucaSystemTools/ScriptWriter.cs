@@ -71,6 +71,10 @@ namespace ProtScript
                 }
                 foreach (var param in code.paramDatas)
                 {
+                    if (param.bytes == null)
+                    {
+                        throw new Exception("语句解析错误！" + code.ToString() + "  参数为null！" + param.valueString);
+                    }
                     if(code.isPosition && param.type == DataType.Position)
                     {
                         dictGoto.Add((int)fs.Position, param.valueString);
