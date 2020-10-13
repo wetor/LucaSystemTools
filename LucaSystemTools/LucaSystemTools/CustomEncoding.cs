@@ -15,9 +15,10 @@ namespace ProtScript
             while (sr.Peek() >= 0)
             {
                 string line = sr.ReadLine();
-                if (line.IndexOf("=") < 0 || line.Length <= 5) continue;
-                string hex = line.Substring(0, 4);
-                string word = line.Substring(5, line.Length - 5);
+                int pos = line.IndexOf("=");
+                if (pos < 0) continue;
+                string hex = line.Substring(0, pos);
+                string word = line.Substring(pos + 1, line.Length - (pos + 1));
                 if (!dict.ContainsKey(word))
                 {
                     dict.Add(word, ScriptUtil.Hex2Byte(hex));
@@ -28,6 +29,7 @@ namespace ProtScript
                     Console.WriteLine("重复的汉字！跳过。{0}", line);
                 }
             }
+            
             sr.Close();
             Console.WriteLine("已加载自定义编码表，有效字符数：{0}", count);
         }
