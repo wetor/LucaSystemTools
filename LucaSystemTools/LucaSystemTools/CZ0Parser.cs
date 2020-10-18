@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using LucaSystem;
 using LucaSystemTools;
+using System.Drawing.Imaging;
 
 namespace ProtImage
 {
@@ -16,13 +17,32 @@ namespace ProtImage
     public class CZ0Parser: CZParserBase
 
     {
+
+        public override void FileExport(string infile, string outpath = null)
+        {
+            BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
+            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
+            if (outpath != null)
+            {
+                texture.Save(outpath, ImageFormat.Png);
+            }
+            else
+            {
+                texture.Save(infile + ".png", ImageFormat.Png);
+            }
+            br.Close();
+        }
+
+        public override void FileImport(string path, string outpath = null)
+        {
+            throw new NotImplementedException();
+        }
         byte[] Texture;
         public CZ0Parser(byte[] Texture)
         {
             this.Texture = Texture;
         }
-
-        public Bitmap Import()
+        public Bitmap Export(byte[] Texture, string name = "")
         {
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ0Header Header = new CZ0Header();
@@ -34,15 +54,36 @@ namespace ProtImage
             Reader.Seek(Header.HeaderLength, SeekOrigin.Begin);
 
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            for (int y = 0; y < Header.Heigth; y++)
-                for (int x = 0; x < Header.Width; x++)
+            if (Header.Colorbits == 8)
+            {
+                System.Diagnostics.Debug.WriteLine(8);
+                Pixel32[] ColorPanel = new Pixel32[256];
+                Pixel32 Pixel = new Pixel32();
+                for (int i = 0; i < ColorPanel.Length; i++)
                 {
-                    Pixel Pixel = new Pixel();
                     Reader.ReadStruct(ref Pixel);
-                    Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
+                    ColorPanel[i] = Pixel;
                 }
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        byte tmp = 0;
+                        Reader.ReadStruct(ref tmp);
+                        uint index = tmp;
+                        Picture.SetPixel(x, y, Color.FromArgb(ColorPanel[index].A, ColorPanel[index].R, ColorPanel[index].G, ColorPanel[index].B));
+                    }
 
+            }
+            else if (Header.Colorbits == 32)
+            {
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel Pixel = new Pixel();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
+                    }
+            }
             Reader.Close();
 
             return Picture;
@@ -62,6 +103,7 @@ namespace ProtImage
         public uint HeaderLength;
         public ushort Width;
         public ushort Heigth;
+        public byte Colorbits;
         //dynamic length
     }
     public struct Pixel32
