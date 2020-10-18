@@ -23,6 +23,8 @@ namespace ProtScript
     {
         ISLAND,
         FLOWERS_PSV,
+        FLOWERS2_PSV,
+        FLOWERS3_PSV,
         SP,
         CL,
         TAWL,
@@ -455,7 +457,7 @@ namespace ProtScript
                     outfilepath = path + ".txt";
                 else if (FormatLua || FormatJson) // 同时导出两种格式，区分
                     outfilepath += ".txt";
-                if (Path.GetExtension(outfilepath) != "txt")
+                if (Path.GetExtension(outfilepath) != ".txt")
                     outfilepath += ".txt";
                 Decompile(path, outfilepath);
             }
