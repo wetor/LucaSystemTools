@@ -74,6 +74,16 @@ namespace ProtImage
                     }
 
             }
+            else if (Header.Colorbits == 24)
+            {
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel24 Pixel = new Pixel24();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
+                    }
+            }
             else if (Header.Colorbits == 32)
             {
                 for (int y = 0; y < Header.Heigth; y++)
@@ -109,6 +119,10 @@ namespace ProtImage
     public struct Pixel32
     {
         public byte B, G, R, A;
+    }
+    public struct Pixel24
+    {
+        public byte R, G, B;
     }
     public struct Pixel
     {
