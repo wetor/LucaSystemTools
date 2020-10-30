@@ -67,8 +67,8 @@ namespace ProtImage
                 //字库格式
                 //System.Diagnostics.Debug.WriteLine(4);
                 //表
-                Pixel32[] ColorPanel = new Pixel32[16];
-                Pixel32 Pixel = new Pixel32();
+                Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[16];
+                Pixel32_BGRA Pixel = new Pixel32_BGRA();
                 for (int i = 0; i < ColorPanel.Length; i++)
                 {
                     Reader.ReadStruct(ref Pixel);
@@ -100,8 +100,8 @@ namespace ProtImage
             else if (Header.Colorbits == 8)//8bit
             {
                 System.Diagnostics.Debug.WriteLine(8);
-                Pixel32[] ColorPanel = new Pixel32[256];
-                Pixel32 Pixel = new Pixel32();
+                Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[256];
+                Pixel32_BGRA Pixel = new Pixel32_BGRA();
                 for (int i = 0; i < ColorPanel.Length; i++)
                 {
                     Reader.ReadStruct(ref Pixel);
@@ -184,7 +184,7 @@ namespace ProtImage
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
 
 
-            Pixel32 Pixel = new Pixel32();
+            Pixel32_BGRA Pixel = new Pixel32_BGRA();
             Pixel.R = 255;
             Pixel.G = 255;
             Pixel.B = 255;

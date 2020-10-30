@@ -20,7 +20,7 @@ namespace ProtImage
             DatHeader Header = new DatHeader();
             Reader.ReadStruct(ref Header);
             //Header.Blockh = (ushort)Math.Ceiling((float)Header.Heigth / (float)Header.Colorblock);
-            Pixel32[] ColorPanel = new Pixel32[0];
+            Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[0];
 
             uint Signature = Header.Signature;
             int PixivBytes = 0;
@@ -62,8 +62,8 @@ namespace ProtImage
 
             if (DatType == 2)
             {
-                Pixel32 tmpPixel=new Pixel32();
-                ColorPanel = new Pixel32[256];
+                Pixel32_BGRA tmpPixel=new Pixel32_BGRA();
+                ColorPanel = new Pixel32_BGRA[256];
                 for (int j = 0; j < ColorPanel.Length; j++)
                 {
                     //TODO 颜色表的 颜色还有错误
@@ -161,7 +161,7 @@ namespace ProtImage
 
             }
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
-            Pixel32 Pixel = new Pixel32();
+            Pixel32_BGRA Pixel = new Pixel32_BGRA();
             MemoryStream ms = new MemoryStream(output.ToArray());
             byte[] bytArray4Count = new byte[4];
             ms.Seek(0, SeekOrigin.Begin);

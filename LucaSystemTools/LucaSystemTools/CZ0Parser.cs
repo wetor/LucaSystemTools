@@ -57,8 +57,8 @@ namespace ProtImage
             if (Header.Colorbits == 8)
             {
                 System.Diagnostics.Debug.WriteLine(8);
-                Pixel32[] ColorPanel = new Pixel32[256];
-                Pixel32 Pixel = new Pixel32();
+                Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[256];
+                Pixel32_BGRA Pixel = new Pixel32_BGRA();
                 for (int i = 0; i < ColorPanel.Length; i++)
                 {
                     Reader.ReadStruct(ref Pixel);
@@ -79,7 +79,7 @@ namespace ProtImage
                 for (int y = 0; y < Header.Heigth; y++)
                     for (int x = 0; x < Header.Width; x++)
                     {
-                        Pixel24 Pixel = new Pixel24();
+                        Pixel24_RGB Pixel = new Pixel24_RGB();
                         Reader.ReadStruct(ref Pixel);
                         Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
                     }
@@ -89,7 +89,7 @@ namespace ProtImage
                 for (int y = 0; y < Header.Heigth; y++)
                     for (int x = 0; x < Header.Width; x++)
                     {
-                        Pixel Pixel = new Pixel();
+                        Pixel32_RGBA Pixel = new Pixel32_RGBA();
                         Reader.ReadStruct(ref Pixel);
                         Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
                     }
@@ -116,15 +116,15 @@ namespace ProtImage
         public byte Colorbits;
         //dynamic length
     }
-    public struct Pixel32
-    {
-        public byte B, G, R, A;
-    }
-    public struct Pixel24
+    public struct Pixel24_RGB
     {
         public byte R, G, B;
     }
-    public struct Pixel
+    public struct Pixel32_BGRA
+    {
+        public byte B, G, R, A;
+    }
+    public struct Pixel32_RGBA
     {
         public byte R, G, B, A;
     }

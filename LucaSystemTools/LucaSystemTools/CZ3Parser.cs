@@ -67,7 +67,7 @@ namespace ProtImage
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
 
 
-            Pixel32 Pixel = new Pixel32();
+            Pixel32_BGRA Pixel = new Pixel32_BGRA();
             Pixel.R = 255;
             Pixel.G = 255;
             Pixel.B = 255;

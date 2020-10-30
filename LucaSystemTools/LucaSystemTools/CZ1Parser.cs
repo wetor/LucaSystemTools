@@ -29,8 +29,8 @@ namespace ProtImage
                 //字库格式
                 //System.Diagnostics.Debug.WriteLine(4);
                 //表
-                Pixel32[] ColorPanel = new Pixel32[16];
-                Pixel32 Pixel = new Pixel32();
+                Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[16];
+                Pixel32_BGRA Pixel = new Pixel32_BGRA();
                 for (int i = 0; i < ColorPanel.Length; i++)
                 {
                     Reader.ReadStruct(ref Pixel);
@@ -62,8 +62,8 @@ namespace ProtImage
             else if (Header.Colorbits == 8)//8bit
             {
                 System.Diagnostics.Debug.WriteLine(8);
-                Pixel32[] ColorPanel = new Pixel32[256];
-                Pixel32 Pixel = new Pixel32();
+                Pixel32_BGRA[] ColorPanel = new Pixel32_BGRA[256];
+                Pixel32_BGRA Pixel = new Pixel32_BGRA();
                 for (int i = 0; i < ColorPanel.Length; i++)
                 {
                     Reader.ReadStruct(ref Pixel);
@@ -88,28 +88,35 @@ namespace ProtImage
                 }
 
             }
-            //else if (Header.Colorbits == 24)
-            //{
+            else if (Header.Colorbits == 24)
+            {
+                System.Diagnostics.Debug.WriteLine(24);
+                List<byte> bytes = (List<byte>)Decompress(Reader);
+                Reader = new StructReader(new MemoryStream(bytes.ToArray()));
 
-            //    for (int y = 0; y < Header.Heigth; y++)
-            //    for (int x = 0; x < Header.Width; x++)
-            //    {
-            //        Pixel24 Pixel = new Pixel24();
-            //        Reader.ReadStruct(ref Pixel);
-            //        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
-            //    }
-            //}
-            //else if (Header.Colorbits == 32)//32
-            //{
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel24_RGB Pixel = new Pixel24_RGB();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
+                    }
+            }
+            else if (Header.Colorbits == 32)//32
+            {
+                System.Diagnostics.Debug.WriteLine(32);
+                List<byte> bytes = (List<byte>)Decompress(Reader);
+                Reader = new StructReader(new MemoryStream(bytes.ToArray()));
 
-            //    for (int y = 0; y < Header.Heigth; y++)
-            //    for (int x = 0; x < Header.Width; x++)
-            //    {
-            //        Pixel32 Pixel = new Pixel32();
-            //        Reader.ReadStruct(ref Pixel);
-            //        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
-            //    }
-            //}
+
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel32_RGBA Pixel = new Pixel32_RGBA();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
+                    }
+            }
             Reader.Close();
             return Picture;
         }
@@ -130,7 +137,7 @@ namespace ProtImage
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
 
 
-            Pixel32 Pixel = new Pixel32();
+            Pixel32_BGRA Pixel = new Pixel32_BGRA();
             Pixel.R = 255;
             Pixel.G = 255;
             Pixel.B = 255;
