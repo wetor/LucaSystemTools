@@ -35,7 +35,32 @@ namespace ProtImage
 
         public override void FileImport(string path, string outpath = null)
         {
-            throw new NotImplementedException();
+            CZOutputInfo czOutput = new CZOutputInfo();
+            Bitmap Picture = new Bitmap(File.Open(path, FileMode.Open));
+            StructWriter Writer = new StructWriter(File.Open(path + ".cz0", FileMode.Create));
+            CZ1Header header;
+            header.Signature = "CZ0";
+            header.HeaderLength = 0x40;
+            header.Width = (ushort)Picture.Width;
+            header.Heigth = (ushort)Picture.Height;
+            header.Colorbits = 32;
+            Writer.WriteStruct(ref header);
+            Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
+
+            System.Diagnostics.Debug.WriteLine(32);
+            //byte[] bytes = new byte[Picture.Height * Picture.Width * 4];
+            int i = 0;
+            for (int y = 0; y < Picture.Height; y++)
+            {
+                for (int x = 0; x < Picture.Width; x++)
+                {
+                    Writer.Write(Picture.GetPixel(x, y).R);
+                    Writer.Write(Picture.GetPixel(x, y).G);
+                    Writer.Write(Picture.GetPixel(x, y).B);
+                    Writer.Write(Picture.GetPixel(x, y).A);
+                }
+            }
+            Writer.Close();
         }
         byte[] Texture;
         public CZ0Parser(byte[] Texture)
