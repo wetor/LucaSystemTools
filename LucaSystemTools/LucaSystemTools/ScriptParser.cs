@@ -56,18 +56,21 @@ namespace ProtScript
         private bool FormatLua = false;
         private bool FormatLuaE = false;
         private bool FormatJson = false;
+        private string OnlyText = null;
 
         public ScriptParser(GameScript game, string custom_game = "", 
             bool oldFormat = false, 
             bool lua = false,
             bool luae = false,
-            bool json = false)
+            bool json = false,
+            string onlyText = null)
         {
             this.game = game;
             this.FormatOld = oldFormat;
             this.FormatLua = lua;
             this.FormatLuaE = luae;
             this.FormatJson = json;
+            this.OnlyText = onlyText;
             if (oldFormat)
             {
                 // Decompile
@@ -486,6 +489,26 @@ namespace ProtScript
                     if (Path.GetExtension(outfilepath) != ".json") 
                         outfilepath += ".json";
                     scriptReader.SaveJson(outfilepath);
+                }
+                
+                if (OnlyText != null)
+                {
+                    outfilepath += ".string.txt";
+                    int mode = 0;
+                    switch (OnlyText)
+                    {
+                        case "replace":
+                            mode = 1;
+                            break;
+                        case "translate":
+                            mode = 2;
+                            break;
+                        case "review":
+                        default:
+                            mode = 0;
+                            break;
+                    }
+                    scriptReader.SaveString(outfilepath, mode);
                 }
                 scriptReader.Close();
             }

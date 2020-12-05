@@ -33,6 +33,9 @@ namespace LucaSystem.Utils
         [Option(Description = "Script opcode ,For [scr]", ShortName = "opcode")]
         public string OpcodePath { get; set; }
 
+        [Option(Description = "OnlyText [review] or [replace] or [translate]", ShortName = "ot")]
+        public string OnlyText { get; set; } = null;
+
         [Option(Description = "Script custom opcode ,For [scr]", ShortName = "c")]
         public string CustomOpcodePath { get; set; }
 
@@ -122,15 +125,15 @@ namespace LucaSystem.Utils
                         }
                         if (!string.IsNullOrEmpty(CustomOpcodePath))
                         {
-                            selclass = new ScriptParser(GameScript.CUSTOM, CustomOpcodePath, 
-                                FormatOld, FormatLua, FormatLuaE,FormatJson);
+                            selclass = new ScriptParser(GameScript.CUSTOM, CustomOpcodePath,
+                                FormatOld, FormatLua, FormatLuaE, FormatJson, OnlyText);
                         }
                         else if (!string.IsNullOrEmpty(OpcodePath))
                         {
                             if (OpcodePath != "CUSTOM")
                             {
-                                selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true),"", 
-                                    FormatOld, FormatLua, FormatLuaE,FormatJson);
+                                selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true), "",
+                                    FormatOld, FormatLua, FormatLuaE, FormatJson, OnlyText);
                             }
                         }
                         else

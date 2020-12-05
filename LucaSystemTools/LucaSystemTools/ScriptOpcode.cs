@@ -39,10 +39,12 @@ namespace ProtScript
     {
         public DataType type;
         public bool nullable;
-        public ParamType(DataType _type, bool _nullable)
+        public bool export;
+        public ParamType(DataType _type, bool _nullable, bool _export = false)
         {
             type = _type;
             nullable = _nullable;
+            export = _export;
         }
 
     }
@@ -79,6 +81,7 @@ namespace ProtScript
             bool is_param = false;
             bool is_comment = false;
             bool flag_nullable = false;
+            bool flag_export = false;
             for (int i = 0; i < text.Length;)
             {
                 char ch = text[i];
@@ -94,11 +97,15 @@ namespace ProtScript
                     case '!':
                         flag_nullable = true;
                         break;
+                    case '@':
+                        flag_export = true;
+                        break;
                     case ',':
                         if (is_param && tmp != "")
                         {
-                            param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable));
+                            param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable, flag_export));
                             flag_nullable = false;
+                            flag_export = false;
                         }
                         else
                         {
@@ -111,8 +118,9 @@ namespace ProtScript
                         if (is_param)
                         {
                             if (tmp != "")
-                                param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable));
+                                param.Add(new ParamType((DataType)Enum.Parse(typeof(DataType), tmp, true), flag_nullable, flag_export));
                             flag_nullable = false;
+                            flag_export = false;
                             is_param = false;
                         }
                         else

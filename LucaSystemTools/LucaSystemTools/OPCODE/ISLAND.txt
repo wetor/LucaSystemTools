@@ -24,9 +24,9 @@ ARFLAGSET
 COLORBG_SET
 SPLINE_SET
 QUAKE_SET
-MESSAGE (UInt16, UInt16, StringSJIS);递增数，文本id，角色文本id，文本
+MESSAGE (UInt16, UInt16, @StringSJIS);递增数，文本id，角色文本id，文本
 MESSAGE_CLEAR
-SELECT (UInt16, UInt16, UInt16, UInt16, StringSJIS);选择文本
+SELECT (UInt16, UInt16, UInt16, UInt16, @StringSJIS);选择文本
 CLOSE_WINDOW
 LOG (Byte, UInt16, UInt16, StringSJIS)
 LOG_PAUSE

@@ -235,6 +235,61 @@ namespace ProtScript
             sw.WriteLine(JsonConvert.SerializeObject(script, Formatting.Indented, jsetting));
             sw.Close();
         }
+
+        private delegate string StringFormater(int codeIndex, int index, CodeLine code);
+        /// <summary>
+        /// 导出在OPCODE中被"@"标记的数据。可导入，需要结合json或lua
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="mode">0：review模式，仅文本；1：replace模式，id和文本；2：translate模式，对照</param>
+        public void SaveString(string path, int mode = 0)
+        {
+            StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
+
+            StringFormater formater;
+            if(mode == 1)
+            {
+                formater = delegate (int codeIndex, int index, CodeLine code)
+                {
+                    string str = code.paramDatas[index].valueString.Replace("\n", @"\n");
+                    string indexStr = code.info.data[0].ToString().PadLeft(8, '0');
+                    //"●(\d{5})\|(\d{8})●\s?(.*?)[\r\n|\n]"
+                    return "●" + codeIndex.ToString().PadLeft(5, '0') + "|" + indexStr + "● " + str;
+                };
+            }
+            else if (mode == 2)
+            {
+                formater = delegate (int codeIndex, int index, CodeLine code)
+                {
+                    string str = code.paramDatas[index].valueString.Replace("\n", @"\n");
+                    string indexStr = code.info.data[0].ToString().PadLeft(8, '0');
+                    string codeIndexStr = codeIndex.ToString().PadLeft(5, '0');
+                    //"○(\d{5})\|(\d{8})○\s?(.*?)[\r\n|\n]●(\d{5})\|(\d{8})●\s?(.*?)[\r\n|\n]"
+                    return "○" + codeIndexStr + "|" + indexStr + "○ " + str+ "\n" +
+                    "●" + codeIndexStr + "|" + indexStr + "● " + str;
+                };
+            }
+            else
+            {
+                formater = delegate (int codeIndex, int index, CodeLine code)
+                {
+                    return code.paramDatas[index].valueString.Replace("\n", @"\n");
+                };
+            }
+            int i = 0;
+            foreach (var code in script.lines)
+            {
+                for(int index = 0; index < code.paramTypes.Length; index++)
+                {
+                    if (code.paramTypes[index].export)
+                    {
+                        sw.WriteLine(formater(++i, index, code));
+                        sw.WriteLine();
+                    }
+                }
+            }
+            sw.Close();
+        }
         public void SaveLua(string path, bool canLoad = true)
         {
             StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
