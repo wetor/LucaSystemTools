@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LucaSystemTools", "LucaSystemTools\LucaSystemTools.csproj", "{F2D9A655-FBC5-43C2-9BB7-66422082A1F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpcodeGuide", "OpcodeGuide\OpcodeGuide.csproj", "{59341751-A528-48C9-8AB6-7FBD5707F1E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpcodeGuide", "OpcodeGuide\OpcodeGuide.csproj", "{59341751-A528-48C9-8AB6-7FBD5707F1E1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
