@@ -102,9 +102,37 @@
             this.statusItemSelect = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel3 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusBytesSelect = new System.Windows.Forms.ToolStripStatusLabel();
+            this.textOpcode = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.label3 = new System.Windows.Forms.Label();
+            this.label4 = new System.Windows.Forms.Label();
+            this.textParams = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.btnTextToList = new System.Windows.Forms.Button();
+            this.btnApply = new System.Windows.Forms.Button();
+            this.checkNullable = new System.Windows.Forms.CheckBox();
+            this.checkExport = new System.Windows.Forms.CheckBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnLoadPrev = new System.Windows.Forms.Button();
+            this.btnLoadNext = new System.Windows.Forms.Button();
+            this.label10 = new System.Windows.Forms.Label();
+            this.label9 = new System.Windows.Forms.Label();
+            this.btnScriptJump = new System.Windows.Forms.Button();
+            this.textJumpIndex = new System.Windows.Forms.TextBox();
+            this.textJumpPosition = new System.Windows.Forms.TextBox();
+            this.labelScriptSize = new System.Windows.Forms.Label();
+            this.label8 = new System.Windows.Forms.Label();
+            this.labelScriptVersion = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.radioJumpPosition = new System.Windows.Forms.RadioButton();
+            this.radioJumpIndex = new System.Windows.Forms.RadioButton();
             this.mainMenu.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.bytesView)).BeginInit();
             this.statusStrip1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // mainMenu
@@ -115,7 +143,7 @@
             this.help});
             this.mainMenu.Location = new System.Drawing.Point(0, 0);
             this.mainMenu.Name = "mainMenu";
-            this.mainMenu.Size = new System.Drawing.Size(908, 25);
+            this.mainMenu.Size = new System.Drawing.Size(1072, 25);
             this.mainMenu.TabIndex = 0;
             this.mainMenu.Text = "menuStrip1";
             // 
@@ -285,6 +313,7 @@
             this.paramsList.TileSize = new System.Drawing.Size(60, 40);
             this.paramsList.UseCompatibleStateImageBehavior = false;
             this.paramsList.View = System.Windows.Forms.View.List;
+            this.paramsList.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.paramsList_ItemSelectionChanged);
             // 
             // textView
             // 
@@ -293,18 +322,18 @@
             this.textView.Name = "textView";
             this.textView.Size = new System.Drawing.Size(709, 85);
             this.textView.TabIndex = 2;
-            this.textView.Text = "<div style=\"background:#000\">text</div>\nasdad\n这是中文";
+            this.textView.Text = "";
             // 
             // typeList
             // 
             this.typeList.FormattingEnabled = true;
             this.typeList.ItemHeight = 17;
             this.typeList.Location = new System.Drawing.Point(258, 142);
-            this.typeList.MultiColumn = true;
             this.typeList.Name = "typeList";
             this.typeList.Size = new System.Drawing.Size(127, 242);
             this.typeList.TabIndex = 3;
-            this.typeList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.typeList_MouseClick);
+            this.typeList.SelectedIndexChanged += new System.EventHandler(this.typeList_SelectedIndexChanged);
+            this.typeList.DoubleClick += new System.EventHandler(this.typeList_DoubleClick);
             // 
             // btnInsertUp
             // 
@@ -400,6 +429,8 @@
             this.previewList.TabIndex = 10;
             this.previewList.UseCompatibleStateImageBehavior = false;
             this.previewList.View = System.Windows.Forms.View.Details;
+            this.previewList.MouseClick += new System.Windows.Forms.MouseEventHandler(this.previewList_MouseClick);
+            this.previewList.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.previewList_MouseDoubleClick);
             // 
             // type
             // 
@@ -424,9 +455,9 @@
             this.statusItemSelect,
             this.toolStripStatusLabel3,
             this.statusBytesSelect});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 597);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 569);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(908, 26);
+            this.statusStrip1.Size = new System.Drawing.Size(1072, 26);
             this.statusStrip1.TabIndex = 11;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -487,11 +518,285 @@
             this.statusBytesSelect.Size = new System.Drawing.Size(85, 21);
             this.statusBytesSelect.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // textOpcode
+            // 
+            this.textOpcode.Location = new System.Drawing.Point(12, 96);
+            this.textOpcode.Name = "textOpcode";
+            this.textOpcode.Size = new System.Drawing.Size(138, 23);
+            this.textOpcode.TabIndex = 13;
+            this.textOpcode.Text = "MESSAGE";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(12, 76);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(115, 17);
+            this.label1.TabIndex = 14;
+            this.label1.Text = "OPCODE(指令名)：";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(12, 122);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(152, 17);
+            this.label2.TabIndex = 15;
+            this.label2.Text = "参数类型列表（可拖动）：";
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(258, 122);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(140, 17);
+            this.label3.TabIndex = 16;
+            this.label3.Text = "可选类型（双击插入）：";
+            // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(403, 122);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(188, 17);
+            this.label4.TabIndex = 17;
+            this.label4.Text = "数据预览（双击复制到剪辑板）：";
+            // 
+            // textParams
+            // 
+            this.textParams.Location = new System.Drawing.Point(156, 96);
+            this.textParams.Name = "textParams";
+            this.textParams.Size = new System.Drawing.Size(483, 23);
+            this.textParams.TabIndex = 19;
+            this.textParams.Text = "Int32, int16,Uint16";
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(156, 76);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(92, 17);
+            this.label6.TabIndex = 20;
+            this.label6.Text = "参数类型序列：";
+            // 
+            // btnTextToList
+            // 
+            this.btnTextToList.Location = new System.Drawing.Point(645, 96);
+            this.btnTextToList.Name = "btnTextToList";
+            this.btnTextToList.Size = new System.Drawing.Size(76, 23);
+            this.btnTextToList.TabIndex = 21;
+            this.btnTextToList.Text = "解析到列表";
+            this.btnTextToList.UseVisualStyleBackColor = true;
+            this.btnTextToList.Click += new System.EventHandler(this.btnTextToList_Click);
+            // 
+            // btnApply
+            // 
+            this.btnApply.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btnApply.Location = new System.Drawing.Point(156, 229);
+            this.btnApply.Name = "btnApply";
+            this.btnApply.Size = new System.Drawing.Size(75, 35);
+            this.btnApply.TabIndex = 22;
+            this.btnApply.Text = "应用";
+            this.btnApply.UseVisualStyleBackColor = true;
+            this.btnApply.Click += new System.EventHandler(this.btnApply_Click);
+            // 
+            // checkNullable
+            // 
+            this.checkNullable.AutoSize = true;
+            this.checkNullable.Location = new System.Drawing.Point(201, 310);
+            this.checkNullable.Name = "checkNullable";
+            this.checkNullable.Size = new System.Drawing.Size(51, 21);
+            this.checkNullable.TabIndex = 23;
+            this.checkNullable.Text = "可空";
+            this.checkNullable.UseVisualStyleBackColor = true;
+            // 
+            // checkExport
+            // 
+            this.checkExport.AutoSize = true;
+            this.checkExport.Location = new System.Drawing.Point(201, 291);
+            this.checkExport.Name = "checkExport";
+            this.checkExport.Size = new System.Drawing.Size(51, 21);
+            this.checkExport.TabIndex = 24;
+            this.checkExport.Text = "导出";
+            this.checkExport.UseVisualStyleBackColor = true;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.btnLoadPrev);
+            this.groupBox1.Controls.Add(this.btnLoadNext);
+            this.groupBox1.Controls.Add(this.label10);
+            this.groupBox1.Controls.Add(this.label9);
+            this.groupBox1.Controls.Add(this.btnScriptJump);
+            this.groupBox1.Controls.Add(this.textJumpIndex);
+            this.groupBox1.Controls.Add(this.textJumpPosition);
+            this.groupBox1.Controls.Add(this.labelScriptSize);
+            this.groupBox1.Controls.Add(this.label8);
+            this.groupBox1.Controls.Add(this.labelScriptVersion);
+            this.groupBox1.Controls.Add(this.label7);
+            this.groupBox1.Controls.Add(this.textBox1);
+            this.groupBox1.Controls.Add(this.label5);
+            this.groupBox1.Controls.Add(this.radioJumpPosition);
+            this.groupBox1.Controls.Add(this.radioJumpIndex);
+            this.groupBox1.Location = new System.Drawing.Point(738, 76);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(230, 450);
+            this.groupBox1.TabIndex = 25;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "脚本控制";
+            // 
+            // btnLoadPrev
+            // 
+            this.btnLoadPrev.Location = new System.Drawing.Point(7, 184);
+            this.btnLoadPrev.Name = "btnLoadPrev";
+            this.btnLoadPrev.Size = new System.Drawing.Size(94, 31);
+            this.btnLoadPrev.TabIndex = 31;
+            this.btnLoadPrev.Text = "<解析上一句";
+            this.btnLoadPrev.UseVisualStyleBackColor = true;
+            // 
+            // btnLoadNext
+            // 
+            this.btnLoadNext.Location = new System.Drawing.Point(130, 184);
+            this.btnLoadNext.Name = "btnLoadNext";
+            this.btnLoadNext.Size = new System.Drawing.Size(94, 31);
+            this.btnLoadNext.TabIndex = 30;
+            this.btnLoadNext.Text = "解析下一句>";
+            this.btnLoadNext.UseVisualStyleBackColor = true;
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(7, 92);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(68, 17);
+            this.label10.TabIndex = 29;
+            this.label10.Text = "当前序号：";
+            // 
+            // label9
+            // 
+            this.label9.AutoSize = true;
+            this.label9.Location = new System.Drawing.Point(7, 69);
+            this.label9.Name = "label9";
+            this.label9.Size = new System.Drawing.Size(68, 17);
+            this.label9.TabIndex = 28;
+            this.label9.Text = "当前位置：";
+            // 
+            // btnScriptJump
+            // 
+            this.btnScriptJump.Location = new System.Drawing.Point(7, 116);
+            this.btnScriptJump.Name = "btnScriptJump";
+            this.btnScriptJump.Size = new System.Drawing.Size(59, 52);
+            this.btnScriptJump.TabIndex = 10;
+            this.btnScriptJump.Text = "跳转到";
+            this.btnScriptJump.UseVisualStyleBackColor = true;
+            // 
+            // textJumpIndex
+            // 
+            this.textJumpIndex.Location = new System.Drawing.Point(144, 145);
+            this.textJumpIndex.Name = "textJumpIndex";
+            this.textJumpIndex.Size = new System.Drawing.Size(80, 23);
+            this.textJumpIndex.TabIndex = 9;
+            this.textJumpIndex.Text = "0";
+            // 
+            // textJumpPosition
+            // 
+            this.textJumpPosition.Location = new System.Drawing.Point(144, 116);
+            this.textJumpPosition.Name = "textJumpPosition";
+            this.textJumpPosition.Size = new System.Drawing.Size(80, 23);
+            this.textJumpPosition.TabIndex = 8;
+            this.textJumpPosition.Text = "0";
+            // 
+            // labelScriptSize
+            // 
+            this.labelScriptSize.AutoSize = true;
+            this.labelScriptSize.Location = new System.Drawing.Point(69, 46);
+            this.labelScriptSize.Name = "labelScriptSize";
+            this.labelScriptSize.Size = new System.Drawing.Size(43, 17);
+            this.labelScriptSize.TabIndex = 5;
+            this.labelScriptSize.Text = "19200";
+            // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(7, 46);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(68, 17);
+            this.label8.TabIndex = 4;
+            this.label8.Text = "脚本大小：";
+            // 
+            // labelScriptVersion
+            // 
+            this.labelScriptVersion.AutoSize = true;
+            this.labelScriptVersion.Location = new System.Drawing.Point(206, 46);
+            this.labelScriptVersion.Name = "labelScriptVersion";
+            this.labelScriptVersion.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptVersion.TabIndex = 3;
+            this.labelScriptVersion.Text = "3";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(144, 46);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(68, 17);
+            this.label7.TabIndex = 2;
+            this.label7.Text = "脚本版本：";
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(69, 20);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.ReadOnly = true;
+            this.textBox1.Size = new System.Drawing.Size(155, 23);
+            this.textBox1.TabIndex = 0;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(7, 23);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(68, 17);
+            this.label5.TabIndex = 1;
+            this.label5.Text = "文 件 名 ：";
+            // 
+            // radioJumpPosition
+            // 
+            this.radioJumpPosition.AutoSize = true;
+            this.radioJumpPosition.Checked = true;
+            this.radioJumpPosition.Location = new System.Drawing.Point(69, 118);
+            this.radioJumpPosition.Name = "radioJumpPosition";
+            this.radioJumpPosition.Size = new System.Drawing.Size(86, 21);
+            this.radioJumpPosition.TabIndex = 26;
+            this.radioJumpPosition.TabStop = true;
+            this.radioJumpPosition.Text = "语句位置：";
+            this.radioJumpPosition.UseVisualStyleBackColor = true;
+            // 
+            // radioJumpIndex
+            // 
+            this.radioJumpIndex.AutoSize = true;
+            this.radioJumpIndex.Location = new System.Drawing.Point(69, 147);
+            this.radioJumpIndex.Name = "radioJumpIndex";
+            this.radioJumpIndex.Size = new System.Drawing.Size(86, 21);
+            this.radioJumpIndex.TabIndex = 27;
+            this.radioJumpIndex.Text = "语句序号：";
+            this.radioJumpIndex.UseVisualStyleBackColor = true;
+            // 
             // Guide
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(908, 623);
+            this.ClientSize = new System.Drawing.Size(1072, 595);
+            this.Controls.Add(this.groupBox1);
+            this.Controls.Add(this.checkExport);
+            this.Controls.Add(this.checkNullable);
+            this.Controls.Add(this.btnApply);
+            this.Controls.Add(this.btnTextToList);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.textParams);
+            this.Controls.Add(this.label4);
+            this.Controls.Add(this.label3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.textOpcode);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.previewList);
             this.Controls.Add(this.bytesView);
@@ -506,7 +811,7 @@
             this.Controls.Add(this.mainMenu);
             this.MainMenuStrip = this.mainMenu;
             this.Name = "Guide";
-            this.Text = "OpcodeGuide";
+            this.Text = "OPCODE:";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Guide_FormClosing);
             this.Load += new System.EventHandler(this.Guide_Load);
             this.mainMenu.ResumeLayout(false);
@@ -514,6 +819,8 @@
             ((System.ComponentModel.ISupportInitialize)(this.bytesView)).EndInit();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -564,6 +871,34 @@
         private System.Windows.Forms.ToolStripStatusLabel statusBytesSelect;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
         private System.Windows.Forms.ToolStripStatusLabel statusItemSelect;
+        private System.Windows.Forms.TextBox textOpcode;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textParams;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button btnTextToList;
+        private System.Windows.Forms.Button btnApply;
+        private System.Windows.Forms.CheckBox checkNullable;
+        private System.Windows.Forms.CheckBox checkExport;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.TextBox textJumpIndex;
+        private System.Windows.Forms.TextBox textJumpPosition;
+        private System.Windows.Forms.Label labelScriptSize;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Label labelScriptVersion;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Button btnScriptJump;
+        private System.Windows.Forms.RadioButton radioJumpPosition;
+        private System.Windows.Forms.RadioButton radioJumpIndex;
+        private System.Windows.Forms.Label label10;
+        private System.Windows.Forms.Label label9;
+        private System.Windows.Forms.Button btnLoadPrev;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button btnLoadNext;
     }
 }
 

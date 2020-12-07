@@ -25,6 +25,7 @@ namespace ProtScript
         Int16,
         UInt32,
         Int32,
+        Position,
         StringUnicode,
         StringSJIS,
         StringUTF8,
@@ -32,8 +33,7 @@ namespace ProtScript
         LenStringUnicode,
         LenStringSJIS,
         LenStringUTF8,
-        LenStringCustom,
-        Position
+        LenStringCustom
     }
     public struct ParamType
     {

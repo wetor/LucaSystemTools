@@ -26,6 +26,10 @@ namespace TestWFCore
 
 
         private byte[] currentBytes = null;
+
+        private Dictionary<DataType, int> typeSize = new Dictionary<DataType, int>();
+
+        private Dictionary<DataType, string> typeTip = new Dictionary<DataType, string>();
         public Guide()
         {
             InitializeComponent();
@@ -33,6 +37,43 @@ namespace TestWFCore
 
         private void Guide_Load(object sender, EventArgs e)
         {
+            typeSize.Add(DataType.Null, 0);
+            typeTip.Add(DataType.Null, "占位用\n长度：0");
+            typeSize.Add(DataType.Byte, 1);
+            typeTip.Add(DataType.Byte, "单字节类型\n长度：1");
+            typeSize.Add(DataType.Byte2, 2);
+            typeTip.Add(DataType.Byte2, "双字节类型\n长度：2");
+            typeSize.Add(DataType.Byte3, 3);
+            typeTip.Add(DataType.Byte3, "三字节类型\n长度：3");
+            typeSize.Add(DataType.Byte4, 4);
+            typeTip.Add(DataType.Byte4, "四字节类型\n长度：4");
+
+            typeSize.Add(DataType.Int16, 2);
+            typeTip.Add(DataType.Int16, "有符号短整数类型\n长度：2\n值域：[-32768, 32767]");
+
+            typeSize.Add(DataType.UInt16, 2);
+            typeTip.Add(DataType.UInt16, "无符号短整数类型\n长度：2\n值域：[0, 65535]");
+
+            typeSize.Add(DataType.Int32, 4);
+            typeTip.Add(DataType.Int32, "有符号整数类型\n长度：4\n值域：[-2^31, 2^31-1]");
+
+            typeSize.Add(DataType.UInt32, 4);
+            typeTip.Add(DataType.UInt32, "无符号整数类型\n长度：4\n值域：[0, 2^32-1]");
+
+            typeSize.Add(DataType.Position, 4);
+            typeTip.Add(DataType.Position, "跳转地址，无符号整数类型\n长度：4\n值域：[0, {fileSize}]");
+
+            typeTip.Add(DataType.StringUnicode, "Unicode编码的字符串\n长度：以[0x0000]结尾");
+            typeTip.Add(DataType.StringSJIS, "日文Shift-JIS编码的字符串\n长度：以[0x00]结尾");
+            typeTip.Add(DataType.StringUTF8, "UTF-8编码的字符串\n长度：以[0x00]结尾");
+            typeTip.Add(DataType.StringCustom, "自定义编码的字符串\n长度：以[0x00]结尾\n说明：通常为替换的Shift-JIS编码");
+            
+            typeTip.Add(DataType.LenStringUnicode, "有长度Unicode编码的字符串\n长度：字符串前UInt16数据");
+            typeTip.Add(DataType.LenStringSJIS, "有长度日文Shift-JIS编码的字符串\n长度：字符串前UInt16数据");
+            typeTip.Add(DataType.LenStringUTF8, "[未定义]有长度UTF-8编码的字符串\n长度：未定义");
+            typeTip.Add(DataType.LenStringCustom, "有长度自定义编码的字符串\n长度：字符串前UInt16数据\n说明：通常为替换的Shift-JIS编码");
+
+
             statusToolVersion.Text = "20201212";
             foreach(ToolStripMenuItem menu in mainMenu.Items)
             {
@@ -63,24 +104,14 @@ namespace TestWFCore
                     }
                 }
             }
-            ColumnHeader columnHeader = new ColumnHeader();
-            columnHeader.Width = -1;    //设置列宽度 width
-            columnHeader.TextAlign = HorizontalAlignment.Left;   //设置列的对齐方式 
-            this.paramsList.Columns.Add(columnHeader);    //将列头添加到ListView控件
 
-            this.paramsList.BeginUpdate();   //与EndUpdate成对使用，挂起UI，绘制控件
+
 
             typeList.Items.Clear();
-            foreach (var suit in Enum.GetValues(typeof(DataType)))
+            foreach (var t in Enum.GetValues(typeof(DataType)))
             {
-                if (paramsList.Items.Count >= 12) break;
-                ListViewItem listViewItem = new ListViewItem();
-                listViewItem.Text = suit.ToString();
-                this.paramsList.Items.Add(listViewItem);
-                typeList.Items.Add(suit.ToString());
+                typeList.Items.Add(t.ToString());
             }
-
-            this.paramsList.EndUpdate();
 
             paramsList.AllowDrop = true;
             paramsList.ItemDrag += ParamsList_ItemDrag;
@@ -92,40 +123,33 @@ namespace TestWFCore
             // https://blog.csdn.net/weixin_30369087/article/details/99901570
 
             List<string> bytes = new List<string>();
-            bytes.AddRange(@"
-0A 80 81 09 70 EF FF A0 D3 8E 00 00 
-0A 80 81 09 70 EF FF A0 D3 8E 00 00 
-0A 80 81 09 70 EF FF A0 D3 8E 00 00 
-0A 80 81 09 70 EF FF A0 D3 8E 00 00 
-0A 80 81 09 70 EF FF A0 D3 8E 00 00".Split(' '));
-            currentBytes = new byte[] {
-                0x0A,0x80,0x81,0x09,0x70,0xEF,0xFF,0xA0,0xD3,0x8E,0x00,0x00,
-                0x0A,0x80,0x81,0x09,0x70,0xEF,0xFF,0xA0,0xD3,0x8E,0x00,0x00,
-                0x0A,0x80,0x81,0x09,0x70,0xEF,0xFF,0xA0,0xD3,0x8E,0x00,0x00,
-                0x0A,0x80,0x81,0x09,0x70,0xEF,0xFF,0xA0,0xD3,0x8E,0x00,0x00,
-                0x0A,0x80,0x81,0x09,0x70,0xEF,0xFF,0xA0,0xD3,0x8E,0x00,0x00
-            };
+            string str = @"18 1B D0 82 3C 00 13 00 60 83 4B 83 4C 83 4C 82 62 40 81 75 93 87 82 CC 90 6C 82 A9 82 C8 81 48 81 40 82 BB 81 41 8A 4F 82 CC 90 6C 8A D4 82 A9 82 C8 81 48 81 76 00 05";
+            bytes.AddRange(str.Split(' '));
+
+            currentBytes = ScriptUtil.Hex2Byte(str);
+            LoadBytes(currentBytes);
+
+
+        }
+
+        private void LoadBytes(byte[] bytes)
+        {
             DataTable dt = new DataTable();
-            for (int i = 0; i < bytes.Count; i++)
+            for (int i = 0; i < bytes.Length; i++)
             {
                 dt.Columns.Add(new DataColumn(i.ToString()));
             }
-            
             DataRow dr = dt.Rows.Add();
             bytesView.DataSource = dt;
-
-            for (int i = 0; i < bytes.Count; i++)
+            Graphics currentGraphics = Graphics.FromHwnd(this.Handle);
+            double dpixRatio = currentGraphics.DpiX / 96;
+            int w = (int)Math.Ceiling(25 * dpixRatio);
+            for (int i = 0; i < bytes.Length; i++)
             {
-                if (i < 5)
-                {
-                    bytesView.Columns[i].DefaultCellStyle.BackColor = Color.Aquamarine;
-                }
-                bytesView.Columns[i].Width = 25;
-                dr[i] = bytes[i];
+                bytesView.Columns[i].Width = w;
+                dr[i] = bytes[i].ToString("X2");
             }
-            
-            
-            
+            currentBytes = bytes;
         }
 
         #region 菜单栏 File
@@ -355,12 +379,9 @@ namespace TestWFCore
                 statusItemSelect.Text = paramsList.SelectedItems[0].Text;
             }
         }
-        private void typeList_MouseClick(object sender, MouseEventArgs e)
+        private void typeList_DoubleClick(object sender, EventArgs e)
         {
-            if (typeList.SelectedIndex >= 0)
-            {
-                statusItemSelect.Text = typeList.SelectedItem.ToString();
-            }
+            btnInsertDown_Click(sender, e);
         }
 
         #region ParamsList 拖拽排序
@@ -421,7 +442,14 @@ namespace TestWFCore
                 MessageBox.Show("最多12个数据！");
                 return;
             }
-            
+            if (checkNullable.Checked)
+            {
+                selectStr = "!" + selectStr;
+            }
+            if (checkExport.Checked)
+            {
+                selectStr = "@" + selectStr;
+            }
             if (paramsList.SelectedIndices.Count > 0)
             {
                 int index = paramsList.SelectedIndices[0] + 1;
@@ -445,6 +473,14 @@ namespace TestWFCore
             {
                 MessageBox.Show("最多12个数据！");
                 return;
+            }
+            if (checkNullable.Checked)
+            {
+                selectStr = "!" + selectStr;
+            }
+            if (checkExport.Checked)
+            {
+                selectStr = "@" + selectStr;
             }
             if (paramsList.SelectedIndices.Count > 0)
             {
@@ -495,11 +531,15 @@ namespace TestWFCore
                 index = paramsList.SelectedIndices[0];
                 paramsList.Items.RemoveAt(index);
                 paramsList.SelectedIndices.Clear();
-                if (paramsList.Items.Count > 0 && index == paramsList.Items.Count)
+                if (paramsList.Items.Count > 0 )
                 {
-                    index--;
+                    if(index == paramsList.Items.Count)
+                    {
+                        index--;
+                    }
+                    paramsList.SelectedIndices.Add(index);
                 }
-                paramsList.SelectedIndices.Add(index);
+                
 
             }
         }
@@ -542,20 +582,139 @@ namespace TestWFCore
         }
         private void UpdatePreviewList(int index, int count)
         {
-
-            previewList.Items[0].SubItems[1].Text = (currentBytes[index] > 127 ? 
+            string[] content = new string[previewList.Items.Count];
+            content[0] = (currentBytes[index] > 127 ? 
                 currentBytes[index] - 256 : currentBytes[index]).ToString();
-            previewList.Items[1].SubItems[1].Text = Convert.ToByte(currentBytes[index]).ToString();
+            content[1] = Convert.ToByte(currentBytes[index]).ToString();
+            if(index< currentBytes.Length - 2)
+            {
+                content[2] = BitConverter.ToInt16(currentBytes, index).ToString();
+                content[3] = BitConverter.ToUInt16(currentBytes, index).ToString();
+                if (index < currentBytes.Length - 4)
+                {
+                    content[4] = BitConverter.ToInt32(currentBytes, index).ToString();
+                    content[5] = BitConverter.ToUInt32(currentBytes, index).ToString();
+                }
+            }
+            if (count >= 2)
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                content[6] = Encoding.GetEncoding("Shift-Jis").GetString(currentBytes, index, count);
+                content[7] = Encoding.UTF8.GetString(currentBytes, index, count);
+                content[8] = Encoding.Unicode.GetString(currentBytes, index, count);
+            }
 
-            previewList.Items[2].SubItems[1].Text = BitConverter.ToInt16(currentBytes, index).ToString();
-            previewList.Items[3].SubItems[1].Text = BitConverter.ToUInt16(currentBytes, index).ToString();
-
-            previewList.Items[4].SubItems[1].Text = BitConverter.ToInt32(currentBytes, index).ToString();
-            previewList.Items[5].SubItems[1].Text = BitConverter.ToUInt32(currentBytes, index).ToString();
-
-            //Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            for(int i = 0; i < content.Length; i++)
+            {
+                previewList.Items[i].SubItems[1].Text = content[i];
+            }
         }
 
-        
+        private void previewList_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            string strText = previewList.GetItemAt(e.X, e.Y).SubItems[1].Text;
+            Clipboard.SetDataObject(strText);
+        }
+
+        private void previewList_MouseClick(object sender, MouseEventArgs e)
+        {
+            ListViewItem item = previewList.GetItemAt(e.X, e.Y);
+            if (item.Index >= 6)
+            {
+                textView.Text = item.SubItems[1].Text;
+            }
+            
+        }
+
+        private int lastTypeStart = 0;
+        private int lastTypeEnd = 0;
+        private void paramsList_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+        {
+            
+            int index = e.ItemIndex;
+            int start = 0;
+            int end = 0;
+            for (int i = 0; i <= index; i++)
+            {
+                string str = paramsList.Items[i].Text;
+                while(str[0] == '!' || str[0] == '@')
+                {
+                    str = str.Remove(0, 1);
+                }
+                DataType t = (DataType)Enum.Parse(typeof(DataType), str, true);
+                if ((int)t >= 10) // 字符串
+                {
+                    end = start = 0;
+                    break;
+                }
+                if (i == index)
+                {
+                    end = start + typeSize[t];
+                }
+                else
+                {
+                    start += typeSize[t];
+                }
+
+            }
+            for (int i = 0; i < bytesView.Columns.Count; i++)
+            {
+                if (i >= start && i < end)
+                {
+                    bytesView.Columns[i].DefaultCellStyle.BackColor = Color.Aquamarine; // 海蓝色
+                }
+                else if(i >= lastTypeStart && i < lastTypeEnd) // 上次改变颜色的变回来
+                {
+                    bytesView.Columns[i].DefaultCellStyle.BackColor = Color.White;
+                }
+            }
+            lastTypeStart = start;
+            lastTypeEnd = end;
+        }
+
+        private void btnTextToList_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var code = new ScriptOpcode((byte)0, textOpcode.Text + "(" + textParams.Text + ")");
+                if (code.param.Count > 12)
+                {
+                    throw new Exception();
+                }
+                paramsList.Clear();
+                foreach (ParamType t in code.param)
+                {
+                    paramsList.Items.Add(t.type.ToString());
+                }
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("格式错误！\n参数类型不区分大小写，使用英文','分隔，最多12个参数。");
+                return;
+            }
+            
+        }
+
+        private void btnApply_Click(object sender, EventArgs e)
+        {
+            var code = new ScriptOpcode((byte)0);
+
+        }
+
+        private void typeList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            
+            DataType t = (DataType)Enum.Parse(typeof(DataType), typeList.SelectedItem.ToString(), true);
+            if ((int)t < 10) // 非字符串
+            {
+                checkExport.Checked = false;
+                checkExport.Enabled = false;
+            }
+            else
+            {
+                checkExport.Enabled = true;
+            }
+            textView.Text = typeTip[t];
+        }
     }
 }
