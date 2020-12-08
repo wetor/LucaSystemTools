@@ -120,6 +120,24 @@ namespace TestWFCore
             paramsList.DragDrop += ParamsList_DragDrop;
             paramsList.DragLeave += ParamsList_DragLeave;
             paramsList.MouseClick += ParamsList_MouseClick;
+
+            typeList.DoubleClick += typeList_DoubleClick;
+
+            btnInsertDown.Click += btnInsertDown_Click;
+            btnInsertUp.Click += btnInsertUp_Click;
+            btnMoveDown.Click += btnMoveDown_Click;
+            btnMoveUp.Click += btnMoveUp_Click;
+            btnDelete.Click += btnDelete_Click;
+
+            bytesView.CellMouseUp += bytesView_CellMouseUp;
+            previewList.MouseDoubleClick += previewList_MouseDoubleClick;
+            previewList.MouseClick += previewList_MouseClick;
+            paramsList.ItemSelectionChanged += paramsList_ItemSelectionChanged;
+
+            btnTextToList.Click += btnTextToList_Click;
+            btnApply.Click += btnApply_Click;
+            typeList.SelectedIndexChanged += typeList_SelectedIndexChanged;
+
             // https://blog.csdn.net/weixin_30369087/article/details/99901570
 
             List<string> bytes = new List<string>();
