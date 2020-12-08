@@ -17,6 +17,7 @@ NS两款游戏脚本相关，看代码就行了~
 **CZ0Parser.cs、CZ1Parser.cs、CZ3Parser.cs、CZ4Parser.cs**
 
 - Prototype新游戏好像用的都是这种图片，dat的升级版，CZ1提取和打包完成，CZ3只有提取， 新增CZ4
+- CZ中的颜色压缩32位转8位使用的是pngquant https://github.com/kornelski/pngquant
 
 **DatParser.cs**
 
