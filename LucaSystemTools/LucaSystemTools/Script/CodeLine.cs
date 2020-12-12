@@ -22,6 +22,8 @@ namespace ProtScript.Entity
         public byte opcodeIndex;
         // 参数的已知类型
         public ParamType[] paramTypes;
+        // 此行的字节数据
+        public byte[] bytes;
 
         [JsonProperty]
         public string opcode { get; set; }

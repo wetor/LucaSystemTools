@@ -69,6 +69,7 @@ namespace ProtScript
         {
             this.opcode_byte = opcode_byte;
             this.opcode = opcode;
+            param.Clear();
             param.AddRange(values);
         }
 

@@ -5,7 +5,7 @@ using McMaster.Extensions.CommandLineUtils;
 namespace LucaSystemTools
 {
 
-    class Program
+    public class Program
     {
         public static bool debug = false;
         public static uint toolVersion = 20201012;

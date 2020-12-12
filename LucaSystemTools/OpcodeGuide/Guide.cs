@@ -11,21 +11,17 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Diagnostics;
 
-namespace TestWFCore
+namespace OpcodeGuide
 {
     public partial class Guide : Form
     {
-        private string opcodeFile = "";
-        private bool isOpenOpcode => opcodeFile != ""; // 是否打开了OPCODE
 
-        private List<string> scriptFile = new List<string>();
-        private bool isOpenScript => scriptFile.Count > 0; // 是否打开了脚本
-
-        private Dictionary<byte, ScriptOpcode> bytesToOpcodeDict = new Dictionary<byte, ScriptOpcode>();
-        private int scriptVersion = 3;
+        private OpcodeEntity opcodeEntity = new OpcodeEntity();
 
 
         private byte[] currentBytes = null;
+
+        private int scriptFileIndex = -1;
 
         private Dictionary<DataType, int> typeSize = new Dictionary<DataType, int>();
 
@@ -138,6 +134,13 @@ namespace TestWFCore
             btnApply.Click += btnApply_Click;
             typeList.SelectedIndexChanged += typeList_SelectedIndexChanged;
 
+            scriptList.MouseClick += scriptList_MouseClick;
+            btnLoadScript.Click += btnLoadScript_Click;
+
+            btnLoadNext.Click += btnLoadNext_Click;
+            btnLoadPrev.Click += btnLoadPrev_Click;
+            btnScriptJump.Click += btnScriptJump_Click;
+
             // https://blog.csdn.net/weixin_30369087/article/details/99901570
 
             List<string> bytes = new List<string>();
@@ -182,11 +185,11 @@ namespace TestWFCore
                     "新建OPCODE", MessageBoxButtons.YesNoCancel);
             if (result == DialogResult.Yes)
             {
-                scriptVersion = 3;
+                opcodeEntity.Version = 3;
             }
             else if (result == DialogResult.No)
             {
-                scriptVersion = 2;
+                opcodeEntity.Version = 2;
             }
             else
             {
@@ -194,10 +197,9 @@ namespace TestWFCore
             }
             if (saveFile.ShowDialog() == DialogResult.OK)
             {
-                opcodeFile = saveFile.FileName;
-                this.Text = "OpcodeGuide  FileName: " + opcodeFile + " *"; // 未保存标记
-                LoadOpcode();
-                statusScriptVersion.Text = scriptVersion.ToString();
+                opcodeEntity.Filename = saveFile.FileName;
+                this.Text = "OpcodeGuide  FileName: " + opcodeEntity.Name + " *"; // 未保存标记
+                statusScriptVersion.Text = opcodeEntity.Version.ToString();
             }
         }
         /// <summary>
@@ -210,10 +212,16 @@ namespace TestWFCore
             openFile.Multiselect = false;
             if (openFile.ShowDialog() == DialogResult.OK)
             {
-                opcodeFile = openFile.FileName;
-                this.Text = "OpcodeGuide  FileName: " + opcodeFile;
-                scriptVersion = LoadOpcode(opcodeFile);
-                statusScriptVersion.Text = scriptVersion.ToString();
+                
+                opcodeEntity.Filename = openFile.FileName;
+                this.Text = "OpcodeGuide  FileName: " + opcodeEntity.Name;
+                statusScriptVersion.Text = opcodeEntity.Version.ToString();
+                // 更新GUI
+                opcodeList.Items.Clear();
+                foreach (var item in opcodeEntity.bytesToOpcodeDict)
+                {
+                    opcodeList.Items.Add(item.Value.opcode);
+                }
             }
         }
         /// <summary>
@@ -223,11 +231,15 @@ namespace TestWFCore
         /// <param name="e"></param>
         private void MenuOpenScript_Click(object sender, EventArgs e)
         {
-            openFile.Multiselect = true;
-            if (openFile.ShowDialog() == DialogResult.OK)
+            if (openFolder.ShowDialog() == DialogResult.OK)
             {
-                scriptFile.AddRange(openFile.FileNames);
+                opcodeEntity.ScriptPath = openFolder.SelectedPath;
                 // 更新GUI
+                scriptList.Items.Clear();
+                foreach (var item in opcodeEntity.Scripts)
+                {
+                    scriptList.Items.Add(item.Name);
+                }
             }
         }
         /// <summary>
@@ -244,7 +256,8 @@ namespace TestWFCore
         /// <param name="e"></param>
         private void MenuCloseScript_Click(object sender, EventArgs e)
         {
-            scriptFile.Clear();
+            opcodeEntity.ScriptPath = "";
+            scriptFileIndex = -1;
             InitGuide();
         }
         /// <summary>
@@ -279,7 +292,7 @@ namespace TestWFCore
         /// <returns>True:可以关闭；False:不可以关闭</returns>
         private bool OnClose()
         {
-            if (!isOpenOpcode)
+            if (!opcodeEntity.isOpen)
             {
                 return true;
             }
@@ -296,8 +309,7 @@ namespace TestWFCore
             }
 
             this.Text = "OpcodeGuide";
-            opcodeFile = "";
-            scriptFile.Clear();
+            opcodeEntity.Close();
             return true;
         }
         /// <summary>
@@ -306,7 +318,7 @@ namespace TestWFCore
         /// <param name="file">另存为的文件名</param>
         private void OnSave(string file = null)
         {
-            if (!isOpenOpcode)
+            if (!opcodeEntity.isOpen)
             {
                 return;
             }
@@ -321,66 +333,6 @@ namespace TestWFCore
             }
         }
 
-        /// <summary>
-        /// 创建或载入OPCODE
-        /// </summary>
-        /// <param name="opcode"></param>
-        /// <returns></returns>
-        private int LoadOpcode(string opcode = "")
-        {
-            int version = 3;
-            bool notNull = true;
-            if (opcode == "")
-            {
-                notNull = false;
-            }
-            else if (File.Exists(opcode))
-            {
-                string[] dic;
-                dic = File.ReadAllLines(opcode);
-                bytesToOpcodeDict.Clear();
-                if (dic.Length > 0)
-                {
-                    if (dic[0].Trim() == ";Ver3")
-                    {
-                        version = 3;
-                    }
-                    else if (dic[0].Trim() == ";Ver2")
-                    {
-                        version = 2;
-                    }
-                }
-                int i = 0;
-                foreach (string line in dic)
-                {
-                    if (line.TrimStart()[0] == ';')
-                    {
-                        continue;
-                    }
-                    bytesToOpcodeDict.Add((byte)i, new ScriptOpcode((byte)i, line.Replace("\r", "")));
-                    i++;
-                }
-                if (bytesToOpcodeDict.Count == 0)
-                {
-                    notNull = false;
-                }
-                else
-                {
-                    Debug.WriteLine("已加载opcode文件：{0}", Path.GetFileName(opcode));
-                }
-
-            }
-
-            if (!notNull)
-            {
-                for (int i = 0; i < 128; i++)
-                {
-                    bytesToOpcodeDict.Add((byte)i, new ScriptOpcode((byte)i, "OP_" + ScriptUtil.Byte2Hex((byte)i)));
-                }
-                Debug.WriteLine("无opcode文件或无opcode，创建默认opcode");
-            }
-            return version;
-        }
         /// <summary>
         /// 窗口即将关闭时
         /// </summary>
@@ -591,7 +543,8 @@ namespace TestWFCore
                 }
                 //Debug.WriteLine("{0} {1} {2}", e.RowIndex, e.ColumnIndex, bytesView.SelectedCells.Count);
                 UpdatePreviewList(ids[0], ids.Length);
-                statusBytesSelect.Text = ids[0] + "-" + ids[ids.Length - 1] + ", " + ids.Length;
+                
+                statusBytesSelect.Text = (int.Parse(labelScriptPos.Text) + ids[0]) + ", " + ids.Length;
                 lastSelectIndex = e.ColumnIndex;
                 lastSelectCount = bytesView.SelectedCells.Count;
             }
@@ -734,5 +687,82 @@ namespace TestWFCore
             }
             textView.Text = typeTip[t];
         }
+
+        private void scriptList_MouseClick(object sender, MouseEventArgs e)
+        {
+            scriptFileIndex = scriptList.SelectedIndex;
+            UpdateScriptInfo();
+        }
+        private void UpdateScriptInfo()
+        {
+            var script = opcodeEntity.Scripts[scriptFileIndex];
+            textFilename.Text = script.Name;
+            labelScriptSize.Text = script.Size.ToString();
+            labelScriptPos.Text = script.Position.ToString();
+            labelScriptCodeID.Text = script.Index.ToString();
+            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            {
+                return;
+            }
+            byte[] bytes = opcodeEntity.GetBytes();
+            LoadBytes(bytes);
+            labelScriptCodeLen.Text = bytes.Length.ToString();
+            labelScriptCodeNum.Text = opcodeEntity.CodeLineCount.ToString();
+            textJumpIndex.Text = labelScriptCodeID.Text;
+            
+        }
+        private void btnLoadScript_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpen && scriptFileIndex >= 0)) 
+            {
+                return;
+            }
+            opcodeEntity.LoadScript(scriptFileIndex);
+            UpdateScriptInfo();
+        }
+        private void btnLoadNext_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            {
+                return;
+            }
+            opcodeEntity.CurrentCodeID++;
+            UpdateScriptInfo();
+        }
+        private void btnLoadPrev_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            {
+                return;
+            }
+            opcodeEntity.CurrentCodeID--;
+            UpdateScriptInfo();
+        }
+        private void btnScriptJump_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            {
+                return;
+            }
+            int offset = 0, num = 0;
+            if (radioJumpIndex.Checked)
+            {
+                num = int.Parse(textJumpIndex.Text);
+                opcodeEntity.CurrentCodeID = num;
+            }
+            else if (radioJumpPosition.Checked)
+            {
+                num = int.Parse(textJumpPosition.Text);
+                offset = opcodeEntity.TryJumpPosition(num);
+            }
+            UpdateScriptInfo();
+            if (radioJumpPosition.Checked)
+            {
+                bytesView.CurrentCell = bytesView.Rows[0].Cells[offset];
+                bytesView_CellMouseUp(sender, new DataGridViewCellMouseEventArgs(offset, 0, 0, 0, new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0)));
+            }
+        }
+        
     }
+    
 }

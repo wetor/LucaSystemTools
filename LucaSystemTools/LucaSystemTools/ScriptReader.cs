@@ -25,7 +25,7 @@ namespace ProtScript
         private HashSet<int> labelPos = new HashSet<int>();
 
 
-        private ScriptEntity script = new ScriptEntity();
+        public ScriptEntity script = new ScriptEntity();
 
         public ScriptReader(string path, Dictionary<byte, ScriptOpcode> dict, int version)
         {
@@ -63,9 +63,9 @@ namespace ProtScript
         {
             return fs.Position < fs.Length;
         }
-        public void ReadScript_Seek(int step)
+        public void ReadScript_Seek(int step, SeekOrigin seek = SeekOrigin.Current)
         {
-            fs.Seek(step,SeekOrigin.Current);
+            fs.Seek(step, seek);
         }
         public CodeLine ReadScript_StepRead(out int position, out int length)
         {
@@ -144,7 +144,10 @@ namespace ProtScript
                 code.opcodeIndex = br.ReadByte();
                 codeOffset++;
             }
-
+            long savePosition = fs.Position;
+            fs.Seek(-codeOffset, SeekOrigin.Current);
+            code.bytes = br.ReadBytes(codeLength);
+            fs.Seek(savePosition, SeekOrigin.Begin);
 
             if (!opcodeDict.ContainsKey(code.opcodeIndex))
             {
@@ -224,6 +227,8 @@ namespace ProtScript
                     labelPos.Add((int)(uint)param.value);
                 }
             }
+
+
             currentLine++;
             return code;
         }

@@ -1,4 +1,4 @@
-﻿namespace TestWFCore
+﻿namespace OpcodeGuide
 {
     partial class Guide
     {
@@ -29,34 +29,34 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Guide));
-            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem21 = new System.Windows.Forms.ListViewItem(new string[] {
             "Signed Byte",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem22 = new System.Windows.Forms.ListViewItem(new string[] {
             "Unsigned Byte",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem23 = new System.Windows.Forms.ListViewItem(new string[] {
             "Signed Int16",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem24 = new System.Windows.Forms.ListViewItem(new string[] {
             "Unsigned Int16",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem5 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem25 = new System.Windows.Forms.ListViewItem(new string[] {
             "Signed Int32",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem6 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem26 = new System.Windows.Forms.ListViewItem(new string[] {
             "Unsigned Int32",
             "0"}, -1);
-            System.Windows.Forms.ListViewItem listViewItem7 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem27 = new System.Windows.Forms.ListViewItem(new string[] {
             "String SJIS",
             ""}, -1);
-            System.Windows.Forms.ListViewItem listViewItem8 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem28 = new System.Windows.Forms.ListViewItem(new string[] {
             "String UTF8",
             ""}, -1);
-            System.Windows.Forms.ListViewItem listViewItem9 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem29 = new System.Windows.Forms.ListViewItem(new string[] {
             "String Unicode",
             ""}, -1);
-            System.Windows.Forms.ListViewItem listViewItem10 = new System.Windows.Forms.ListViewItem(new string[] {
+            System.Windows.Forms.ListViewItem listViewItem30 = new System.Windows.Forms.ListViewItem(new string[] {
             "String Custom",
             ""}, -1);
             this.mainMenu = new System.Windows.Forms.MenuStrip();
@@ -91,6 +91,10 @@
             this.toolStripStatusLabel3 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusBytesSelect = new System.Windows.Forms.ToolStripStatusLabel();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.labelScriptCodeLen = new System.Windows.Forms.Label();
+            this.labelScriptCodeID = new System.Windows.Forms.Label();
+            this.labelScriptPos = new System.Windows.Forms.Label();
+            this.btnLoadScript = new System.Windows.Forms.Button();
             this.btnLoadPrev = new System.Windows.Forms.Button();
             this.btnLoadNext = new System.Windows.Forms.Button();
             this.label10 = new System.Windows.Forms.Label();
@@ -100,14 +104,13 @@
             this.textJumpPosition = new System.Windows.Forms.TextBox();
             this.labelScriptSize = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
-            this.labelScriptVersion = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.textFilename = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.radioJumpPosition = new System.Windows.Forms.RadioButton();
             this.radioJumpIndex = new System.Windows.Forms.RadioButton();
-            this.listBox1 = new System.Windows.Forms.ListBox();
-            this.listBox2 = new System.Windows.Forms.ListBox();
+            this.scriptList = new System.Windows.Forms.ListBox();
+            this.opcodeList = new System.Windows.Forms.ListBox();
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
@@ -134,6 +137,9 @@
             this.typeList = new System.Windows.Forms.ListBox();
             this.textView = new System.Windows.Forms.RichTextBox();
             this.paramsList = new System.Windows.Forms.ListView();
+            this.openFolder = new System.Windows.Forms.FolderBrowserDialog();
+            this.labelScriptCodeNum = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
             this.mainMenu.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -149,7 +155,7 @@
             this.help});
             this.mainMenu.Location = new System.Drawing.Point(0, 0);
             this.mainMenu.Name = "mainMenu";
-            this.mainMenu.Size = new System.Drawing.Size(1079, 25);
+            this.mainMenu.Size = new System.Drawing.Size(1007, 25);
             this.mainMenu.TabIndex = 0;
             this.mainMenu.Text = "menuStrip1";
             // 
@@ -314,9 +320,9 @@
             this.statusItemSelect,
             this.toolStripStatusLabel3,
             this.statusBytesSelect});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 646);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 670);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1079, 26);
+            this.statusStrip1.Size = new System.Drawing.Size(1007, 26);
             this.statusStrip1.TabIndex = 11;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -374,11 +380,17 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.statusBytesSelect.Name = "statusBytesSelect";
-            this.statusBytesSelect.Size = new System.Drawing.Size(85, 21);
+            this.statusBytesSelect.Size = new System.Drawing.Size(95, 21);
             this.statusBytesSelect.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.labelScriptCodeNum);
+            this.groupBox1.Controls.Add(this.label14);
+            this.groupBox1.Controls.Add(this.labelScriptCodeLen);
+            this.groupBox1.Controls.Add(this.labelScriptCodeID);
+            this.groupBox1.Controls.Add(this.labelScriptPos);
+            this.groupBox1.Controls.Add(this.btnLoadScript);
             this.groupBox1.Controls.Add(this.btnLoadPrev);
             this.groupBox1.Controls.Add(this.btnLoadNext);
             this.groupBox1.Controls.Add(this.label10);
@@ -388,9 +400,8 @@
             this.groupBox1.Controls.Add(this.textJumpPosition);
             this.groupBox1.Controls.Add(this.labelScriptSize);
             this.groupBox1.Controls.Add(this.label8);
-            this.groupBox1.Controls.Add(this.labelScriptVersion);
             this.groupBox1.Controls.Add(this.label7);
-            this.groupBox1.Controls.Add(this.textBox1);
+            this.groupBox1.Controls.Add(this.textFilename);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.radioJumpPosition);
             this.groupBox1.Controls.Add(this.radioJumpIndex);
@@ -401,9 +412,45 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "脚本控制";
             // 
+            // labelScriptCodeLen
+            // 
+            this.labelScriptCodeLen.AutoSize = true;
+            this.labelScriptCodeLen.Location = new System.Drawing.Point(69, 92);
+            this.labelScriptCodeLen.Name = "labelScriptCodeLen";
+            this.labelScriptCodeLen.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptCodeLen.TabIndex = 3;
+            this.labelScriptCodeLen.Text = "0";
+            // 
+            // labelScriptCodeID
+            // 
+            this.labelScriptCodeID.AutoSize = true;
+            this.labelScriptCodeID.Location = new System.Drawing.Point(206, 69);
+            this.labelScriptCodeID.Name = "labelScriptCodeID";
+            this.labelScriptCodeID.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptCodeID.TabIndex = 34;
+            this.labelScriptCodeID.Text = "0";
+            // 
+            // labelScriptPos
+            // 
+            this.labelScriptPos.AutoSize = true;
+            this.labelScriptPos.Location = new System.Drawing.Point(69, 69);
+            this.labelScriptPos.Name = "labelScriptPos";
+            this.labelScriptPos.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptPos.TabIndex = 33;
+            this.labelScriptPos.Text = "0";
+            // 
+            // btnLoadScript
+            // 
+            this.btnLoadScript.Location = new System.Drawing.Point(239, 20);
+            this.btnLoadScript.Name = "btnLoadScript";
+            this.btnLoadScript.Size = new System.Drawing.Size(78, 23);
+            this.btnLoadScript.TabIndex = 32;
+            this.btnLoadScript.Text = "载入脚本";
+            this.btnLoadScript.UseVisualStyleBackColor = true;
+            // 
             // btnLoadPrev
             // 
-            this.btnLoadPrev.Location = new System.Drawing.Point(331, 78);
+            this.btnLoadPrev.Location = new System.Drawing.Point(426, 78);
             this.btnLoadPrev.Name = "btnLoadPrev";
             this.btnLoadPrev.Size = new System.Drawing.Size(94, 31);
             this.btnLoadPrev.TabIndex = 31;
@@ -412,7 +459,7 @@
             // 
             // btnLoadNext
             // 
-            this.btnLoadNext.Location = new System.Drawing.Point(454, 78);
+            this.btnLoadNext.Location = new System.Drawing.Point(549, 78);
             this.btnLoadNext.Name = "btnLoadNext";
             this.btnLoadNext.Size = new System.Drawing.Size(94, 31);
             this.btnLoadNext.TabIndex = 30;
@@ -431,15 +478,15 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(7, 69);
+            this.label9.Location = new System.Drawing.Point(7, 92);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(68, 17);
             this.label9.TabIndex = 28;
-            this.label9.Text = "当前位置：";
+            this.label9.Text = "语句长度：";
             // 
             // btnScriptJump
             // 
-            this.btnScriptJump.Location = new System.Drawing.Point(331, 20);
+            this.btnScriptJump.Location = new System.Drawing.Point(426, 20);
             this.btnScriptJump.Name = "btnScriptJump";
             this.btnScriptJump.Size = new System.Drawing.Size(59, 52);
             this.btnScriptJump.TabIndex = 10;
@@ -448,7 +495,7 @@
             // 
             // textJumpIndex
             // 
-            this.textJumpIndex.Location = new System.Drawing.Point(468, 49);
+            this.textJumpIndex.Location = new System.Drawing.Point(563, 49);
             this.textJumpIndex.Name = "textJumpIndex";
             this.textJumpIndex.Size = new System.Drawing.Size(80, 23);
             this.textJumpIndex.TabIndex = 9;
@@ -456,7 +503,7 @@
             // 
             // textJumpPosition
             // 
-            this.textJumpPosition.Location = new System.Drawing.Point(468, 20);
+            this.textJumpPosition.Location = new System.Drawing.Point(563, 20);
             this.textJumpPosition.Name = "textJumpPosition";
             this.textJumpPosition.Size = new System.Drawing.Size(80, 23);
             this.textJumpPosition.TabIndex = 8;
@@ -467,9 +514,9 @@
             this.labelScriptSize.AutoSize = true;
             this.labelScriptSize.Location = new System.Drawing.Point(69, 46);
             this.labelScriptSize.Name = "labelScriptSize";
-            this.labelScriptSize.Size = new System.Drawing.Size(43, 17);
+            this.labelScriptSize.Size = new System.Drawing.Size(15, 17);
             this.labelScriptSize.TabIndex = 5;
-            this.labelScriptSize.Text = "19200";
+            this.labelScriptSize.Text = "0";
             // 
             // label8
             // 
@@ -480,31 +527,22 @@
             this.label8.TabIndex = 4;
             this.label8.Text = "脚本大小：";
             // 
-            // labelScriptVersion
-            // 
-            this.labelScriptVersion.AutoSize = true;
-            this.labelScriptVersion.Location = new System.Drawing.Point(206, 46);
-            this.labelScriptVersion.Name = "labelScriptVersion";
-            this.labelScriptVersion.Size = new System.Drawing.Size(15, 17);
-            this.labelScriptVersion.TabIndex = 3;
-            this.labelScriptVersion.Text = "3";
-            // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(144, 46);
+            this.label7.Location = new System.Drawing.Point(7, 69);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(68, 17);
             this.label7.TabIndex = 2;
-            this.label7.Text = "脚本版本：";
+            this.label7.Text = "当前位置：";
             // 
-            // textBox1
+            // textFilename
             // 
-            this.textBox1.Location = new System.Drawing.Point(69, 20);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ReadOnly = true;
-            this.textBox1.Size = new System.Drawing.Size(155, 23);
-            this.textBox1.TabIndex = 0;
+            this.textFilename.Location = new System.Drawing.Point(69, 20);
+            this.textFilename.Name = "textFilename";
+            this.textFilename.ReadOnly = true;
+            this.textFilename.Size = new System.Drawing.Size(155, 23);
+            this.textFilename.TabIndex = 0;
             // 
             // label5
             // 
@@ -519,7 +557,7 @@
             // 
             this.radioJumpPosition.AutoSize = true;
             this.radioJumpPosition.Checked = true;
-            this.radioJumpPosition.Location = new System.Drawing.Point(393, 22);
+            this.radioJumpPosition.Location = new System.Drawing.Point(488, 22);
             this.radioJumpPosition.Name = "radioJumpPosition";
             this.radioJumpPosition.Size = new System.Drawing.Size(86, 21);
             this.radioJumpPosition.TabIndex = 26;
@@ -530,30 +568,30 @@
             // radioJumpIndex
             // 
             this.radioJumpIndex.AutoSize = true;
-            this.radioJumpIndex.Location = new System.Drawing.Point(393, 51);
+            this.radioJumpIndex.Location = new System.Drawing.Point(488, 51);
             this.radioJumpIndex.Name = "radioJumpIndex";
             this.radioJumpIndex.Size = new System.Drawing.Size(86, 21);
             this.radioJumpIndex.TabIndex = 27;
             this.radioJumpIndex.Text = "语句序号：";
             this.radioJumpIndex.UseVisualStyleBackColor = true;
             // 
-            // listBox1
+            // scriptList
             // 
-            this.listBox1.FormattingEnabled = true;
-            this.listBox1.ItemHeight = 17;
-            this.listBox1.Location = new System.Drawing.Point(12, 59);
-            this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(131, 191);
-            this.listBox1.TabIndex = 26;
+            this.scriptList.FormattingEnabled = true;
+            this.scriptList.ItemHeight = 17;
+            this.scriptList.Location = new System.Drawing.Point(12, 59);
+            this.scriptList.Name = "scriptList";
+            this.scriptList.Size = new System.Drawing.Size(131, 191);
+            this.scriptList.TabIndex = 26;
             // 
-            // listBox2
+            // opcodeList
             // 
-            this.listBox2.FormattingEnabled = true;
-            this.listBox2.ItemHeight = 17;
-            this.listBox2.Location = new System.Drawing.Point(13, 273);
-            this.listBox2.Name = "listBox2";
-            this.listBox2.Size = new System.Drawing.Size(131, 361);
-            this.listBox2.TabIndex = 27;
+            this.opcodeList.FormattingEnabled = true;
+            this.opcodeList.ItemHeight = 17;
+            this.opcodeList.Location = new System.Drawing.Point(13, 273);
+            this.opcodeList.Name = "opcodeList";
+            this.opcodeList.Size = new System.Drawing.Size(131, 361);
+            this.opcodeList.TabIndex = 27;
             // 
             // label11
             // 
@@ -712,16 +750,16 @@
             this.previewList.GridLines = true;
             this.previewList.HideSelection = false;
             this.previewList.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem1,
-            listViewItem2,
-            listViewItem3,
-            listViewItem4,
-            listViewItem5,
-            listViewItem6,
-            listViewItem7,
-            listViewItem8,
-            listViewItem9,
-            listViewItem10});
+            listViewItem21,
+            listViewItem22,
+            listViewItem23,
+            listViewItem24,
+            listViewItem25,
+            listViewItem26,
+            listViewItem27,
+            listViewItem28,
+            listViewItem29,
+            listViewItem30});
             this.previewList.Location = new System.Drawing.Point(397, 87);
             this.previewList.MultiSelect = false;
             this.previewList.Name = "previewList";
@@ -839,16 +877,39 @@
             this.paramsList.UseCompatibleStateImageBehavior = false;
             this.paramsList.View = System.Windows.Forms.View.List;
             // 
+            // openFolder
+            // 
+            this.openFolder.Description = "选择脚本所在文件夹";
+            this.openFolder.UseDescriptionForTitle = true;
+            // 
+            // labelScriptCodeNum
+            // 
+            this.labelScriptCodeNum.AutoSize = true;
+            this.labelScriptCodeNum.Location = new System.Drawing.Point(206, 92);
+            this.labelScriptCodeNum.Name = "labelScriptCodeNum";
+            this.labelScriptCodeNum.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptCodeNum.TabIndex = 36;
+            this.labelScriptCodeNum.Text = "0";
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Location = new System.Drawing.Point(144, 92);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(68, 17);
+            this.label14.TabIndex = 35;
+            this.label14.Text = "语句数量：";
+            // 
             // Guide
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1079, 672);
+            this.ClientSize = new System.Drawing.Size(1007, 696);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.label11);
-            this.Controls.Add(this.listBox2);
-            this.Controls.Add(this.listBox1);
+            this.Controls.Add(this.opcodeList);
+            this.Controls.Add(this.scriptList);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.mainMenu);
@@ -909,9 +970,9 @@
         private System.Windows.Forms.TextBox textJumpPosition;
         private System.Windows.Forms.Label labelScriptSize;
         private System.Windows.Forms.Label label8;
-        private System.Windows.Forms.Label labelScriptVersion;
+        private System.Windows.Forms.Label labelScriptCodeLen;
         private System.Windows.Forms.Label label7;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox textFilename;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Button btnScriptJump;
         private System.Windows.Forms.RadioButton radioJumpPosition;
@@ -919,10 +980,9 @@
         private System.Windows.Forms.Label label10;
         private System.Windows.Forms.Label label9;
         private System.Windows.Forms.Button btnLoadPrev;
-        private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Button btnLoadNext;
-        private System.Windows.Forms.ListBox listBox1;
-        private System.Windows.Forms.ListBox listBox2;
+        private System.Windows.Forms.ListBox scriptList;
+        private System.Windows.Forms.ListBox opcodeList;
         private System.Windows.Forms.Label label11;
         private System.Windows.Forms.Label label12;
         private System.Windows.Forms.GroupBox groupBox2;
@@ -949,6 +1009,12 @@
         private System.Windows.Forms.ListBox typeList;
         private System.Windows.Forms.RichTextBox textView;
         private System.Windows.Forms.ListView paramsList;
+        private System.Windows.Forms.FolderBrowserDialog openFolder;
+        private System.Windows.Forms.Button btnLoadScript;
+        private System.Windows.Forms.Label labelScriptCodeID;
+        private System.Windows.Forms.Label labelScriptPos;
+        private System.Windows.Forms.Label labelScriptCodeNum;
+        private System.Windows.Forms.Label label14;
     }
 }
 

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using ProtScript;
 using System.Diagnostics;
+using ProtScript.Entity;
 
 namespace OpcodeGuide
 {
@@ -18,6 +19,8 @@ namespace OpcodeGuide
         public int Size { get; }
         public int Position { get; set; }
 
+        public int Index { get; set; }
+
         public ScriptInfo(string filename)
         {
             var info = new FileInfo(filename);
@@ -25,6 +28,7 @@ namespace OpcodeGuide
             Name = info.Name;
             Size = (int)info.Length;
             Position = 0;
+            Index = 0;
         }
     }
     /// <summary>
@@ -35,7 +39,12 @@ namespace OpcodeGuide
     /// 开始使用：
     ///     0.LoadScript(index) or LoadScript(filename)
     ///     
-    /// 
+    ///     1.修改CurrentCodeID
+    ///     2.读取或修改CurrentCodeLine
+    ///         2.0 使用SetOpcodeDict
+    ///         2.1 回到CurrentScript.Position位置重新使用ReReadCodeLine重新读取
+    ///         2.2 修改CurrentCodeLine
+    ///         2.3 回到1
     /// 
     ///     e.Close()
     /// </summary>
@@ -48,6 +57,9 @@ namespace OpcodeGuide
         //游戏名 Opcode名
         private string opcodeName;
         public string Name { get { return opcodeName; } }
+
+        public bool isOpen => opcodeName != "" && opcodeName != null;
+        public bool isLoad => scriptLoaded;
         //文件全路径
         public string Filename {
             get { return Path.Combine(opcodePath, opcodeName + opcodeExt); }
@@ -73,7 +85,7 @@ namespace OpcodeGuide
         //脚本目录，发生改变时将重新加载
         public string ScriptPath {
             set {
-                Scripts.Clear();
+                Scripts = new List<ScriptInfo>();
                 var files = Directory.GetFiles(value);
                 foreach (var file in files)
                 {
@@ -89,8 +101,11 @@ namespace OpcodeGuide
         public int CurrentScriptID { 
             get { return index; }
             set {
-                index = value;
-                LoadScript(index);
+                if (value >= 0 && value < Scripts.Count)
+                {
+                    index = value;
+                    LoadScript(index);
+                }
             } 
         }
         //当前脚本
@@ -104,11 +119,98 @@ namespace OpcodeGuide
         //脚本全路径
         public string ScriptFilename(int id) { return Scripts[id].Filename; }
 
+        //当前代码编号
+        private int codeIndex;
+        public int CurrentCodeID
+        {
+            get { return codeIndex; }
+            set {
+                if (value >= 0 && value < reader.script.lines.Count)
+                {
+                    codeIndex = value;
+                    Scripts[index].Index = value;
+                    Scripts[index].Position = reader.script.lines[value].position;
+                }
+            }
+        }
+
+        //当前代码
+        public CodeLine CurrentCodeLine
+        {
+            get { return reader.script.lines[codeIndex]; }
+            set
+            {
+                reader.script.lines[codeIndex] = value;
+            }
+        }
+
+        public int CodeLineCount => reader.script.lines.Count;
 
 
 
+        public Dictionary<byte, ScriptOpcode> bytesToOpcodeDict = new Dictionary<byte, ScriptOpcode>();
 
-        private Dictionary<byte, ScriptOpcode> bytesToOpcodeDict = new Dictionary<byte, ScriptOpcode>();
+        public void SetOpcodeDict(byte opcode_byte, string opcode, params ParamType[] values)
+        {
+            bytesToOpcodeDict[opcode_byte] = new ScriptOpcode(opcode_byte, opcode, values);
+        }
+        public void SetOpcodeDict(byte opcode_byte, string text)
+        {
+            bytesToOpcodeDict[opcode_byte] = new ScriptOpcode(opcode_byte, text);
+        }
+        /// <summary>
+        /// 尝试跳转到指定位置
+        /// </summary>
+        /// <returns>返回差值，为正</returns>
+        public int TryJumpPosition(int position)
+        {
+            if(!(position>=0 && position < Scripts[index].Size))
+            {
+                return 0;
+            }
+            int offset = 0;
+            int start = 0, end = 0; // 查找的范围
+            
+            if (position < reader.script.lines[codeIndex].position)
+            {
+                end = CodeLineCount;
+            }
+            else
+            {
+                start = codeIndex;
+                end = CodeLineCount;
+            }
+            for (int i = start; i < end; i++)
+            {
+                if(position == reader.script.lines[i].position)
+                {
+                    CurrentCodeID = i;
+                    offset = 0;
+                    break;
+                }
+                else if(position < reader.script.lines[i].position)
+                {
+                    CurrentCodeID = i - 1;
+                    offset = position - reader.script.lines[i - 1].position;
+                    break;
+                }
+                if (i == end - 1)
+                {
+                    CurrentCodeID = i;
+                    offset = position - reader.script.lines[i].position;
+                }
+            }
+            return offset;
+        }
+        /// <summary>
+        /// 获取当前语句的字节数据
+        /// </summary>
+        /// <returns></returns>
+        public byte[] GetBytes()
+        {
+            return reader.script.lines[codeIndex].bytes;
+        }
+
         /// <summary>
         /// 载入不在列表中的脚本，并加入到列表
         /// </summary>
@@ -132,8 +234,18 @@ namespace OpcodeGuide
             scriptLoaded = true;
             index = id;
             reader = new ScriptReader(ScriptFilename(index), bytesToOpcodeDict, scriptVersion);
-            reader.ReadScript_Clear();
-            // 载入脚本
+            reader.ReadScript(); // 读入整个脚本
+            CurrentCodeID = 0;
+        }
+        /// <summary>
+        /// 重新读取当前codeline
+        /// </summary>
+        public void ReReadCodeLine()
+        {
+            int position;
+            int length;
+            reader.ReadScript_Seek(CurrentScript.Position, SeekOrigin.Begin);
+            CurrentCodeLine = reader.ReadScript_StepRead(out position, out length);
         }
         public void Close()
         {
