@@ -121,8 +121,8 @@ namespace OpcodeGuide
 
             btnInsertDown.Click += btnInsertDown_Click;
             btnInsertUp.Click += btnInsertUp_Click;
-            btnMoveDown.Click += btnMoveDown_Click;
-            btnMoveUp.Click += btnMoveUp_Click;
+            //btnMoveDown.Click += btnMoveDown_Click;
+            //btnMoveUp.Click += btnMoveUp_Click;
             btnDelete.Click += btnDelete_Click;
 
             bytesView.CellMouseUp += bytesView_CellMouseUp;
@@ -132,6 +132,8 @@ namespace OpcodeGuide
 
             btnTextToList.Click += btnTextToList_Click;
             btnApply.Click += btnApply_Click;
+            btnPreview.Click += btnPreview_Click;
+            btnRestore.Click += btnRestore_Click;
             typeList.SelectedIndexChanged += typeList_SelectedIndexChanged;
 
             scriptList.MouseClick += scriptList_MouseClick;
@@ -140,6 +142,10 @@ namespace OpcodeGuide
             btnLoadNext.Click += btnLoadNext_Click;
             btnLoadPrev.Click += btnLoadPrev_Click;
             btnScriptJump.Click += btnScriptJump_Click;
+            opcodeList.MouseClick += opcodeList_MouseClick;
+            paramsList.Enter += paramsList_Enter;
+
+
 
             // https://blog.csdn.net/weixin_30369087/article/details/99901570
 
@@ -152,7 +158,10 @@ namespace OpcodeGuide
 
 
         }
-
+        /// <summary>
+        /// 将字节数组显示到dataGridView上
+        /// </summary>
+        /// <param name="bytes"></param>
         private void LoadBytes(byte[] bytes)
         {
             DataTable dt = new DataTable();
@@ -197,9 +206,7 @@ namespace OpcodeGuide
             }
             if (saveFile.ShowDialog() == DialogResult.OK)
             {
-                opcodeEntity.Filename = saveFile.FileName;
-                this.Text = "OpcodeGuide  FileName: " + opcodeEntity.Name + " *"; // 未保存标记
-                statusScriptVersion.Text = opcodeEntity.Version.ToString();
+                OpenOpcode(saveFile.FileName, true);
             }
         }
         /// <summary>
@@ -212,20 +219,19 @@ namespace OpcodeGuide
             openFile.Multiselect = false;
             if (openFile.ShowDialog() == DialogResult.OK)
             {
-                
-                opcodeEntity.Filename = openFile.FileName;
-                this.Text = "OpcodeGuide  FileName: " + opcodeEntity.Name;
-                statusScriptVersion.Text = opcodeEntity.Version.ToString();
-                // 更新GUI
-                opcodeList.Items.Clear();
-                foreach (var item in opcodeEntity.bytesToOpcodeDict)
-                {
-                    opcodeList.Items.Add(item.Value.opcode);
-                }
+                OpenOpcode(openFile.FileName);
             }
         }
+        private void OpenOpcode(string filename, bool isNew = false)
+        {
+            opcodeEntity.Filename = filename;
+            this.Text = "OpcodeGuide  FileName: " + opcodeEntity.Name + (isNew ? " *" : "");
+            statusScriptVersion.Text = opcodeEntity.Version.ToString();
+            opcodeList.Items.Clear();
+            opcodeList.Items.AddRange(opcodeEntity.OpcodeArray);
+        }
         /// <summary>
-        /// 载入多个脚本文件用于测试OPCODE
+        /// 打开脚本文件夹
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
@@ -292,7 +298,7 @@ namespace OpcodeGuide
         /// <returns>True:可以关闭；False:不可以关闭</returns>
         private bool OnClose()
         {
-            if (!opcodeEntity.isOpen)
+            if (!opcodeEntity.isOpenOpcode)
             {
                 return true;
             }
@@ -307,7 +313,6 @@ namespace OpcodeGuide
             {
                 return false;
             }
-
             this.Text = "OpcodeGuide";
             opcodeEntity.Close();
             return true;
@@ -318,7 +323,7 @@ namespace OpcodeGuide
         /// <param name="file">另存为的文件名</param>
         private void OnSave(string file = null)
         {
-            if (!opcodeEntity.isOpen)
+            if (!opcodeEntity.isOpenOpcode)
             {
                 return;
             }
@@ -351,7 +356,7 @@ namespace OpcodeGuide
         }
         private void typeList_DoubleClick(object sender, EventArgs e)
         {
-            btnInsertDown_Click(sender, e);
+            btnInsertDown_Click(null, null);
         }
 
         #region ParamsList 拖拽排序
@@ -466,7 +471,7 @@ namespace OpcodeGuide
             }
         }
 
-        private void btnMoveUp_Click(object sender, EventArgs e)
+        /*private void btnMoveUp_Click(object sender, EventArgs e)
         {
             int index = 0;
             if (paramsList.SelectedIndices.Count > 0 && (index = paramsList.SelectedIndices[0]) > 0)
@@ -491,7 +496,7 @@ namespace OpcodeGuide
                 paramsList.SelectedIndices.Clear();
                 paramsList.SelectedIndices.Add(index + 1);
             }
-        }
+        }*/
 
         private void btnDelete_Click(object sender, EventArgs e)
         {
@@ -527,7 +532,6 @@ namespace OpcodeGuide
             else if (e.Button == MouseButtons.Left 
                 && !(e.ColumnIndex == lastSelectIndex && bytesView.SelectedCells.Count == lastSelectCount)) 
             {
-
                 int[] ids = new int[bytesView.SelectedCells.Count];
                 for (int i = 0; i < bytesView.SelectedCells.Count; i++) 
                 {
@@ -603,7 +607,7 @@ namespace OpcodeGuide
         {
             
             int index = e.ItemIndex;
-            int start = 0;
+            int start = opcodeEntity.CurrentBytesOffset;
             int end = 0;
             for (int i = 0; i <= index; i++)
             {
@@ -615,7 +619,7 @@ namespace OpcodeGuide
                 DataType t = (DataType)Enum.Parse(typeof(DataType), str, true);
                 if ((int)t >= 10) // 字符串
                 {
-                    end = start = 0;
+                    end = start = opcodeEntity.CurrentBytesOffset;
                     break;
                 }
                 if (i == index)
@@ -628,6 +632,8 @@ namespace OpcodeGuide
                 }
 
             }
+            bytesView.CurrentCell = bytesView.Rows[0].Cells[start];
+            bytesView_CellMouseUp(null, new DataGridViewCellMouseEventArgs(start, 0, 0, 0, new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0)));
             for (int i = 0; i < bytesView.Columns.Count; i++)
             {
                 if (i >= start && i < end)
@@ -639,6 +645,7 @@ namespace OpcodeGuide
                     bytesView.Columns[i].DefaultCellStyle.BackColor = Color.White;
                 }
             }
+            
             lastTypeStart = start;
             lastTypeEnd = end;
         }
@@ -655,7 +662,7 @@ namespace OpcodeGuide
                 paramsList.Clear();
                 foreach (ParamType t in code.param)
                 {
-                    paramsList.Items.Add(t.type.ToString());
+                    paramsList.Items.Add((t.export ? "@" : "") + (t.nullable ? "!" : "") + t.type);
                 }
             }
             catch (Exception)
@@ -668,10 +675,60 @@ namespace OpcodeGuide
 
         private void btnApply_Click(object sender, EventArgs e)
         {
-            var code = new ScriptOpcode((byte)0);
-
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
+            {
+                return;
+            }
+            opcodeEntity.SetOpcodeDict(listToOpcode());
+            opcodeEntity.OpcodeDictRestore();
+            int index = opcodeEntity.CurrentCodeID;
+            opcodeEntity.LoadScript(scriptFileIndex);
+            opcodeEntity.CurrentCodeID = index;
+            UpdateScriptInfo();
         }
-
+        private void btnPreview_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
+            {
+                return;
+            }
+            
+            opcodeEntity.ReReadCodeLine(listToOpcode());
+            UpdateScriptInfo();
+        }
+        private ScriptOpcode listToOpcode()
+        {
+            var opcode = new ScriptOpcode((byte)opcodeEntity.CurrentOpcodeIndex);
+            opcode.opcode = textOpcode.Text;
+            foreach (ListViewItem item in paramsList.Items)
+            {
+                string str = item.Text;
+                bool nullable = false, export = false;
+                if (str[0] == '@')
+                {
+                    str = str.Remove(0, 1);
+                    export = true;
+                }
+                if (str[0] == '!')
+                {
+                    str = str.Remove(0, 1);
+                    nullable = true;
+                }
+                DataType t = (DataType)Enum.Parse(typeof(DataType), str, true);
+                opcode.param.Add(new ParamType(t, nullable, export));
+            }
+            return opcode;
+        }
+        private void btnRestore_Click(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
+            {
+                return;
+            }
+            opcodeEntity.OpcodeDictRestore();
+            UpdateScriptInfo();
+        }
+            
         private void typeList_SelectedIndexChanged(object sender, EventArgs e)
         {
             
@@ -690,6 +747,10 @@ namespace OpcodeGuide
 
         private void scriptList_MouseClick(object sender, MouseEventArgs e)
         {
+            if (!opcodeEntity.isOpenFolder)
+            {
+                return;
+            }
             scriptFileIndex = scriptList.SelectedIndex;
             UpdateScriptInfo();
         }
@@ -700,7 +761,7 @@ namespace OpcodeGuide
             labelScriptSize.Text = script.Size.ToString();
             labelScriptPos.Text = script.Position.ToString();
             labelScriptCodeID.Text = script.Index.ToString();
-            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
             {
                 return;
             }
@@ -709,11 +770,23 @@ namespace OpcodeGuide
             labelScriptCodeLen.Text = bytes.Length.ToString();
             labelScriptCodeNum.Text = opcodeEntity.CodeLineCount.ToString();
             textJumpIndex.Text = labelScriptCodeID.Text;
-            
+
+
+            opcodeList.SelectedIndex = opcodeEntity.CurrentCodeLine.opcodeIndex;
+            var opcode = opcodeEntity.CurrentOpcode;
+            textOpcode.Text = opcode.opcode;
+            textParams.Text = opcode.ToStringParam();
+            textView.Text = opcodeEntity.CurrentCodeLine.ToString();
+            paramsList.Items.Clear();
+            foreach (ParamType t in opcode.param)
+            {
+                paramsList.Items.Add((t.export ? "@" : "") + (t.nullable ? "!" : "") + t.type);
+            }
+
         }
         private void btnLoadScript_Click(object sender, EventArgs e)
         {
-            if (!(opcodeEntity.isOpen && scriptFileIndex >= 0)) 
+            if (!(opcodeEntity.isOpenOpcode && scriptFileIndex >= 0)) 
             {
                 return;
             }
@@ -722,7 +795,7 @@ namespace OpcodeGuide
         }
         private void btnLoadNext_Click(object sender, EventArgs e)
         {
-            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
             {
                 return;
             }
@@ -731,7 +804,7 @@ namespace OpcodeGuide
         }
         private void btnLoadPrev_Click(object sender, EventArgs e)
         {
-            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
             {
                 return;
             }
@@ -740,29 +813,47 @@ namespace OpcodeGuide
         }
         private void btnScriptJump_Click(object sender, EventArgs e)
         {
-            if (!(opcodeEntity.isOpen && opcodeEntity.isLoad))
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
             {
                 return;
             }
-            int offset = 0, num = 0;
+            int offset = opcodeEntity.CurrentBytesOffset;
             if (radioJumpIndex.Checked)
             {
-                num = int.Parse(textJumpIndex.Text);
+                int num = int.Parse(textJumpIndex.Text);
                 opcodeEntity.CurrentCodeID = num;
             }
             else if (radioJumpPosition.Checked)
             {
-                num = int.Parse(textJumpPosition.Text);
+                int num = int.Parse(textJumpPosition.Text);
                 offset = opcodeEntity.TryJumpPosition(num);
             }
             UpdateScriptInfo();
             if (radioJumpPosition.Checked)
             {
                 bytesView.CurrentCell = bytesView.Rows[0].Cells[offset];
-                bytesView_CellMouseUp(sender, new DataGridViewCellMouseEventArgs(offset, 0, 0, 0, new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0)));
+                bytesView_CellMouseUp(null, new DataGridViewCellMouseEventArgs(offset, 0, 0, 0, new MouseEventArgs(MouseButtons.Left, 0, 0, 0, 0)));
             }
         }
-        
+
+        private void opcodeList_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (!opcodeEntity.isOpenOpcode)
+            {
+                return;
+            }
+            textView.Text = opcodeEntity.getOpcodeDict(opcodeList.SelectedIndex).ToString();
+        }
+
+
+        private void paramsList_Enter(object sender, EventArgs e)
+        {
+            if (!(opcodeEntity.isOpenOpcode && opcodeEntity.isLoadScript))
+            {
+                return;
+            }
+            textView.Text = opcodeEntity.CurrentCodeLine.ToString();
+        }
     }
     
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace ProtScript
@@ -75,6 +76,17 @@ namespace ProtScript
                 i++;
             }
             return scriptVersion;
+        }
+        /// <summary>
+        /// 得到一个对象的克隆
+        /// </summary>
+        public static object Clone(object obj)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            BinaryFormatter formatter = new BinaryFormatter();
+            formatter.Serialize(memoryStream, obj);
+            memoryStream.Position = 0;
+            return formatter.Deserialize(memoryStream);
         }
 
     }

@@ -35,6 +35,7 @@ namespace ProtScript
         LenStringUTF8,
         LenStringCustom
     }
+    [Serializable]
     public struct ParamType
     {
         public DataType type;
@@ -48,6 +49,7 @@ namespace ProtScript
         }
 
     }
+    [Serializable]
     public class ScriptOpcode
     {
         public string opcode = "UNKNOW";
@@ -161,19 +163,18 @@ namespace ProtScript
         public override string ToString()
         {
             string retn = opcode + " (";
-
-            foreach (var value in param)
-            {
-                retn += Enum.GetName(typeof(DataType), value.type) + ", ";
-            }
-            retn = retn.Remove(retn.Length - 2);
-            if(param.Count>0)
-                retn += ")";
+            retn += string.Join(", ", param.Select(x => x.type).ToArray());
+            retn += ")";
             if (comment != "")
                 retn += " ;" + comment;
             return retn;
   
             
+        }
+        public string ToStringParam()
+        {
+            return string.Join(", ", param.Select(
+                x => (x.export ? "@" : "") + (x.nullable ? "!" : "") + x.type).ToArray());
         }
     }
 }

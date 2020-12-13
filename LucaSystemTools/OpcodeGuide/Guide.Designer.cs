@@ -91,6 +91,8 @@
             this.toolStripStatusLabel3 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusBytesSelect = new System.Windows.Forms.ToolStripStatusLabel();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.labelScriptCodeNum = new System.Windows.Forms.Label();
+            this.label14 = new System.Windows.Forms.Label();
             this.labelScriptCodeLen = new System.Windows.Forms.Label();
             this.labelScriptCodeID = new System.Windows.Forms.Label();
             this.labelScriptPos = new System.Windows.Forms.Label();
@@ -114,6 +116,8 @@
             this.label11 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.btnRestore = new System.Windows.Forms.Button();
+            this.btnPreview = new System.Windows.Forms.Button();
             this.checkExport = new System.Windows.Forms.CheckBox();
             this.checkNullable = new System.Windows.Forms.CheckBox();
             this.btnApply = new System.Windows.Forms.Button();
@@ -129,8 +133,6 @@
             this.type = new System.Windows.Forms.ColumnHeader();
             this.value = new System.Windows.Forms.ColumnHeader();
             this.bytesView = new System.Windows.Forms.DataGridView();
-            this.btnMoveUp = new System.Windows.Forms.Button();
-            this.btnMoveDown = new System.Windows.Forms.Button();
             this.btnDelete = new System.Windows.Forms.Button();
             this.btnInsertDown = new System.Windows.Forms.Button();
             this.btnInsertUp = new System.Windows.Forms.Button();
@@ -138,8 +140,6 @@
             this.textView = new System.Windows.Forms.RichTextBox();
             this.paramsList = new System.Windows.Forms.ListView();
             this.openFolder = new System.Windows.Forms.FolderBrowserDialog();
-            this.labelScriptCodeNum = new System.Windows.Forms.Label();
-            this.label14 = new System.Windows.Forms.Label();
             this.mainMenu.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -155,7 +155,7 @@
             this.help});
             this.mainMenu.Location = new System.Drawing.Point(0, 0);
             this.mainMenu.Name = "mainMenu";
-            this.mainMenu.Size = new System.Drawing.Size(1007, 25);
+            this.mainMenu.Size = new System.Drawing.Size(888, 25);
             this.mainMenu.TabIndex = 0;
             this.mainMenu.Text = "menuStrip1";
             // 
@@ -320,9 +320,9 @@
             this.statusItemSelect,
             this.toolStripStatusLabel3,
             this.statusBytesSelect});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 670);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 647);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1007, 26);
+            this.statusStrip1.Size = new System.Drawing.Size(888, 26);
             this.statusStrip1.TabIndex = 11;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -385,6 +385,7 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.btnRestore);
             this.groupBox1.Controls.Add(this.labelScriptCodeNum);
             this.groupBox1.Controls.Add(this.label14);
             this.groupBox1.Controls.Add(this.labelScriptCodeLen);
@@ -411,6 +412,24 @@
             this.groupBox1.TabIndex = 25;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "脚本控制";
+            // 
+            // labelScriptCodeNum
+            // 
+            this.labelScriptCodeNum.AutoSize = true;
+            this.labelScriptCodeNum.Location = new System.Drawing.Point(206, 92);
+            this.labelScriptCodeNum.Name = "labelScriptCodeNum";
+            this.labelScriptCodeNum.Size = new System.Drawing.Size(15, 17);
+            this.labelScriptCodeNum.TabIndex = 36;
+            this.labelScriptCodeNum.Text = "0";
+            // 
+            // label14
+            // 
+            this.label14.AutoSize = true;
+            this.label14.Location = new System.Drawing.Point(144, 92);
+            this.label14.Name = "label14";
+            this.label14.Size = new System.Drawing.Size(68, 17);
+            this.label14.TabIndex = 35;
+            this.label14.Text = "语句数量：";
             // 
             // labelScriptCodeLen
             // 
@@ -450,18 +469,18 @@
             // 
             // btnLoadPrev
             // 
-            this.btnLoadPrev.Location = new System.Drawing.Point(426, 78);
+            this.btnLoadPrev.Location = new System.Drawing.Point(420, 78);
             this.btnLoadPrev.Name = "btnLoadPrev";
-            this.btnLoadPrev.Size = new System.Drawing.Size(94, 31);
+            this.btnLoadPrev.Size = new System.Drawing.Size(85, 31);
             this.btnLoadPrev.TabIndex = 31;
             this.btnLoadPrev.Text = "<解析上一句";
             this.btnLoadPrev.UseVisualStyleBackColor = true;
             // 
             // btnLoadNext
             // 
-            this.btnLoadNext.Location = new System.Drawing.Point(549, 78);
+            this.btnLoadNext.Location = new System.Drawing.Point(558, 78);
             this.btnLoadNext.Name = "btnLoadNext";
-            this.btnLoadNext.Size = new System.Drawing.Size(94, 31);
+            this.btnLoadNext.Size = new System.Drawing.Size(85, 31);
             this.btnLoadNext.TabIndex = 30;
             this.btnLoadNext.Text = "解析下一句>";
             this.btnLoadNext.UseVisualStyleBackColor = true;
@@ -486,7 +505,7 @@
             // 
             // btnScriptJump
             // 
-            this.btnScriptJump.Location = new System.Drawing.Point(426, 20);
+            this.btnScriptJump.Location = new System.Drawing.Point(420, 20);
             this.btnScriptJump.Name = "btnScriptJump";
             this.btnScriptJump.Size = new System.Drawing.Size(59, 52);
             this.btnScriptJump.TabIndex = 10;
@@ -613,6 +632,7 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Controls.Add(this.btnPreview);
             this.groupBox2.Controls.Add(this.checkExport);
             this.groupBox2.Controls.Add(this.checkNullable);
             this.groupBox2.Controls.Add(this.btnApply);
@@ -626,8 +646,6 @@
             this.groupBox2.Controls.Add(this.textOpcode);
             this.groupBox2.Controls.Add(this.previewList);
             this.groupBox2.Controls.Add(this.bytesView);
-            this.groupBox2.Controls.Add(this.btnMoveUp);
-            this.groupBox2.Controls.Add(this.btnMoveDown);
             this.groupBox2.Controls.Add(this.btnDelete);
             this.groupBox2.Controls.Add(this.btnInsertDown);
             this.groupBox2.Controls.Add(this.btnInsertUp);
@@ -640,6 +658,24 @@
             this.groupBox2.TabIndex = 30;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "OPCODE控制";
+            // 
+            // btnRestore
+            // 
+            this.btnRestore.Location = new System.Drawing.Point(511, 78);
+            this.btnRestore.Name = "btnRestore";
+            this.btnRestore.Size = new System.Drawing.Size(41, 31);
+            this.btnRestore.TabIndex = 47;
+            this.btnRestore.Text = "重载";
+            this.btnRestore.UseVisualStyleBackColor = true;
+            // 
+            // btnPreview
+            // 
+            this.btnPreview.Location = new System.Drawing.Point(150, 159);
+            this.btnPreview.Name = "btnPreview";
+            this.btnPreview.Size = new System.Drawing.Size(92, 30);
+            this.btnPreview.TabIndex = 46;
+            this.btnPreview.Text = "应用此条";
+            this.btnPreview.UseVisualStyleBackColor = true;
             // 
             // checkExport
             // 
@@ -664,11 +700,11 @@
             // btnApply
             // 
             this.btnApply.Font = new System.Drawing.Font("Microsoft YaHei UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.btnApply.Location = new System.Drawing.Point(150, 174);
+            this.btnApply.Location = new System.Drawing.Point(149, 195);
             this.btnApply.Name = "btnApply";
-            this.btnApply.Size = new System.Drawing.Size(75, 35);
+            this.btnApply.Size = new System.Drawing.Size(93, 35);
             this.btnApply.TabIndex = 43;
-            this.btnApply.Text = "应用";
+            this.btnApply.Text = "应用全局";
             this.btnApply.UseVisualStyleBackColor = true;
             // 
             // btnTextToList
@@ -797,24 +833,6 @@
             this.bytesView.Size = new System.Drawing.Size(709, 45);
             this.bytesView.TabIndex = 33;
             // 
-            // btnMoveUp
-            // 
-            this.btnMoveUp.Location = new System.Drawing.Point(150, 116);
-            this.btnMoveUp.Name = "btnMoveUp";
-            this.btnMoveUp.Size = new System.Drawing.Size(75, 23);
-            this.btnMoveUp.TabIndex = 32;
-            this.btnMoveUp.Text = "↑向上移动";
-            this.btnMoveUp.UseVisualStyleBackColor = true;
-            // 
-            // btnMoveDown
-            // 
-            this.btnMoveDown.Location = new System.Drawing.Point(150, 145);
-            this.btnMoveDown.Name = "btnMoveDown";
-            this.btnMoveDown.Size = new System.Drawing.Size(75, 23);
-            this.btnMoveDown.TabIndex = 31;
-            this.btnMoveDown.Text = "↓向下移动";
-            this.btnMoveDown.UseVisualStyleBackColor = true;
-            // 
             // btnDelete
             // 
             this.btnDelete.Location = new System.Drawing.Point(150, 87);
@@ -882,29 +900,11 @@
             this.openFolder.Description = "选择脚本所在文件夹";
             this.openFolder.UseDescriptionForTitle = true;
             // 
-            // labelScriptCodeNum
-            // 
-            this.labelScriptCodeNum.AutoSize = true;
-            this.labelScriptCodeNum.Location = new System.Drawing.Point(206, 92);
-            this.labelScriptCodeNum.Name = "labelScriptCodeNum";
-            this.labelScriptCodeNum.Size = new System.Drawing.Size(15, 17);
-            this.labelScriptCodeNum.TabIndex = 36;
-            this.labelScriptCodeNum.Text = "0";
-            // 
-            // label14
-            // 
-            this.label14.AutoSize = true;
-            this.label14.Location = new System.Drawing.Point(144, 92);
-            this.label14.Name = "label14";
-            this.label14.Size = new System.Drawing.Size(68, 17);
-            this.label14.TabIndex = 35;
-            this.label14.Text = "语句数量：";
-            // 
             // Guide
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1007, 696);
+            this.ClientSize = new System.Drawing.Size(888, 673);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.label11);
@@ -1001,8 +1001,6 @@
         private System.Windows.Forms.ColumnHeader type;
         private System.Windows.Forms.ColumnHeader value;
         private System.Windows.Forms.DataGridView bytesView;
-        private System.Windows.Forms.Button btnMoveUp;
-        private System.Windows.Forms.Button btnMoveDown;
         private System.Windows.Forms.Button btnDelete;
         private System.Windows.Forms.Button btnInsertDown;
         private System.Windows.Forms.Button btnInsertUp;
@@ -1015,6 +1013,8 @@
         private System.Windows.Forms.Label labelScriptPos;
         private System.Windows.Forms.Label labelScriptCodeNum;
         private System.Windows.Forms.Label label14;
+        private System.Windows.Forms.Button btnPreview;
+        private System.Windows.Forms.Button btnRestore;
     }
 }
 

@@ -34,6 +34,14 @@ namespace ProtScript
             opcodeDict = dict;
             script.version = version;
         }
+        public void SetOpcodeDict(Dictionary<byte, ScriptOpcode> dict)
+        {
+            opcodeDict = dict;
+        }
+        public ScriptOpcode GetOpcodeDict(byte index)
+        {
+            return opcodeDict[index];
+        }
         public void Close()
         {
             br.Close();
@@ -41,6 +49,7 @@ namespace ProtScript
         }
         public void ReadScript()
         {
+            fs.Seek(0, SeekOrigin.Begin);
             while (fs.Position < fs.Length)
             {
                 script.lines.Add(ReadCodeLine());
@@ -72,6 +81,12 @@ namespace ProtScript
             position = (int)fs.Position;
             CodeLine code = ReadCodeLine();
             length = (int)fs.Position - position;
+            return code;
+        }
+        public CodeLine ReadScript_StepReadByOpcode(ScriptOpcode opcode)
+        {
+            opcodeDict[opcode.opcode_byte] = opcode;
+            CodeLine code = ReadCodeLine();
             return code;
         }
         public void ReadScript_SetCodeLine(CodeLine code)

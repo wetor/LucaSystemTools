@@ -58,8 +58,10 @@ namespace OpcodeGuide
         private string opcodeName;
         public string Name { get { return opcodeName; } }
 
-        public bool isOpen => opcodeName != "" && opcodeName != null;
-        public bool isLoad => scriptLoaded;
+        public bool isOpenOpcode => opcodeName != "" && opcodeName != null;
+
+        public bool isOpenFolder = false;
+        public bool isLoadScript => scriptLoaded;
         //文件全路径
         public string Filename {
             get { return Path.Combine(opcodePath, opcodeName + opcodeExt); }
@@ -91,6 +93,7 @@ namespace OpcodeGuide
                 {
                     Scripts.Add(new ScriptInfo(file));
                 }
+                isOpenFolder = true;
             }
         }
         //脚本文件名
@@ -107,6 +110,28 @@ namespace OpcodeGuide
                     LoadScript(index);
                 }
             } 
+        }
+        //不同版本的脚本bytes开始位置不同
+        public int CurrentBytesOffset
+        {
+            get
+            {
+                if (scriptVersion == 2)
+                {
+                    // 1byte opcode  1byte length  2byte info
+                    return 4;
+                } 
+                else if (scriptVersion == 3)
+                { 
+                    // 2byte length(uncalc) 1byte opcode  1byte n  n*2byte info
+                    return 2 + CurrentCodeLine.info.count * 2;
+                }
+                else
+                {
+                    return 0;
+                }
+                    
+            }
         }
         //当前脚本
         public ScriptInfo CurrentScript => Scripts[index];
@@ -143,12 +168,14 @@ namespace OpcodeGuide
                 reader.script.lines[codeIndex] = value;
             }
         }
+        public ScriptOpcode CurrentOpcode => reader.GetOpcodeDict((byte)CurrentOpcodeIndex);
 
+        public int CurrentOpcodeIndex => reader.script.lines[codeIndex].opcodeIndex;
         public int CodeLineCount => reader.script.lines.Count;
 
 
 
-        public Dictionary<byte, ScriptOpcode> bytesToOpcodeDict = new Dictionary<byte, ScriptOpcode>();
+        private Dictionary<byte, ScriptOpcode> bytesToOpcodeDict = new Dictionary<byte, ScriptOpcode>();
 
         public void SetOpcodeDict(byte opcode_byte, string opcode, params ParamType[] values)
         {
@@ -157,6 +184,33 @@ namespace OpcodeGuide
         public void SetOpcodeDict(byte opcode_byte, string text)
         {
             bytesToOpcodeDict[opcode_byte] = new ScriptOpcode(opcode_byte, text);
+        }
+        public void SetOpcodeDict(ScriptOpcode opcode)
+        {
+            bytesToOpcodeDict[opcode.opcode_byte] = opcode;
+        }
+
+        public string[] OpcodeArray
+        {
+            get
+            {
+                string[] array = new string[bytesToOpcodeDict.Count];
+                byte i = 0;
+                while (i < array.Length) 
+                {
+                    array[i] = bytesToOpcodeDict[i].opcode;
+                    i++;
+                }
+                return array;
+            }
+        }
+        public ScriptOpcode getOpcodeDict(int index)
+        {
+            if (bytesToOpcodeDict.ContainsKey((byte)index))
+            {
+                return bytesToOpcodeDict[(byte)index];
+            }
+            return null;
         }
         /// <summary>
         /// 尝试跳转到指定位置
@@ -233,19 +287,37 @@ namespace OpcodeGuide
             }
             scriptLoaded = true;
             index = id;
-            reader = new ScriptReader(ScriptFilename(index), bytesToOpcodeDict, scriptVersion);
+            var opcodes = (Dictionary<byte, ScriptOpcode>)ScriptUtil.Clone(bytesToOpcodeDict);
+            reader = new ScriptReader(ScriptFilename(index), opcodes, scriptVersion);
             reader.ReadScript(); // 读入整个脚本
             CurrentCodeID = 0;
+        }
+        /// <summary>
+        /// 还原reader的opcode dict
+        /// </summary>
+        public void OpcodeDictRestore()
+        {
+            var opcodes = (Dictionary<byte, ScriptOpcode>)ScriptUtil.Clone(bytesToOpcodeDict);
+            reader.SetOpcodeDict(opcodes);
+            ReReadCodeLine();
+
+        }
+        /// <summary>
+        /// 重新读取当前codeline 临时
+        /// </summary>
+        public void ReReadCodeLine(ScriptOpcode opcode)
+        {
+            reader.ReadScript_Seek(CurrentScript.Position, SeekOrigin.Begin);
+            CurrentCodeLine = reader.ReadScript_StepReadByOpcode(opcode);
         }
         /// <summary>
         /// 重新读取当前codeline
         /// </summary>
         public void ReReadCodeLine()
         {
-            int position;
-            int length;
+            int position, length;
             reader.ReadScript_Seek(CurrentScript.Position, SeekOrigin.Begin);
-            CurrentCodeLine = reader.ReadScript_StepRead(out position, out length);
+            CurrentCodeLine = reader.ReadScript_StepRead(out position,out length);
         }
         public void Close()
         {
