@@ -95,3 +95,6 @@ Options:
 `LucaSystemTools -t scr -m import -f .\10_725.lua -o .\10_725.3 -opcode SP -lua`  
 `LucaSystemTools -t scr -m import -f .\10_725.txt -o .\10_725.4 -opcode SP -old`  
 四种不同方式导入脚本  
+
+## OpcodeGuide
+[查看README](./LucaSystemTools/README.md)

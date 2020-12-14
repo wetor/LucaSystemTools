@@ -103,6 +103,13 @@ namespace OpcodeGuide
                         case "menuSaveAs":
                             menu.DropDownItems[i].Click += MenuSaveAs_Click;
                             break;
+                        case "menuAbout":
+                            menu.DropDownItems[i].Click += MenuAbout_Click;
+                            break;
+                        case "menuHelp":
+                            menu.DropDownItems[i].Click += MenuHelp_Click;
+                            break;
+                            
                         default:
                             break;
                     }
@@ -155,14 +162,14 @@ namespace OpcodeGuide
 
 
 
-            // https://blog.csdn.net/weixin_30369087/article/details/99901570
+            /*
 
             List<string> bytes = new List<string>();
             string str = @"18 1B D0 82 3C 00 13 00 60 83 4B 83 4C 83 4C 82 62 40 81 75 93 87 82 CC 90 6C 82 A9 82 C8 81 48 81 40 82 BB 81 41 8A 4F 82 CC 90 6C 8A D4 82 A9 82 C8 81 48 81 76 00 05";
             bytes.AddRange(str.Split(' '));
 
             currentBytes = ScriptUtil.Hex2Byte(str);
-            LoadBytes(currentBytes);
+            LoadBytes(currentBytes);*/
 
 
         }
@@ -191,6 +198,16 @@ namespace OpcodeGuide
         }
 
         #region 菜单栏 File
+        private void MenuHelp_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("请查看README");
+        }
+        private void MenuAbout_Click(object sender, EventArgs e)
+        {
+            About about = new About();
+            about.Show();
+        }
+
         /// <summary>
         /// 新建OPCODE
         /// </summary>
