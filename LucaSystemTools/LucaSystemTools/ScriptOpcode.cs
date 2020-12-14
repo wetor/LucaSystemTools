@@ -162,9 +162,15 @@ namespace ProtScript
 
         public override string ToString()
         {
-            string retn = opcode + " (";
-            retn += string.Join(", ", param.Select(x => x.type).ToArray());
-            retn += ")";
+            string retn = "";
+            if (param.Count > 0)
+            {
+                retn = opcode + " (" + string.Join(", ", param.Select(x => x.type).ToArray()) + ")";
+            }
+            else
+            {
+                retn = opcode;
+            }
             if (comment != "")
                 retn += " ;" + comment;
             return retn;

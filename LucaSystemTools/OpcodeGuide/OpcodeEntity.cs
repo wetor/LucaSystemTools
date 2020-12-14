@@ -189,7 +189,20 @@ namespace OpcodeGuide
         {
             bytesToOpcodeDict[opcode.opcode_byte] = opcode;
         }
-
+        public void SaveOpcodeDict(string filename = null)
+        {
+            if(filename == null)
+            {
+                filename = Filename;
+            }
+            StreamWriter sw = new StreamWriter(filename);
+            sw.WriteLine(";Ver" + scriptVersion);
+            foreach(var opcode in bytesToOpcodeDict)
+            {
+                sw.WriteLine(opcode.Value.ToString());
+            }
+            sw.Close();
+        }
         public string[] OpcodeArray
         {
             get
