@@ -43,7 +43,7 @@ namespace ProtScript.Entity
                 {
                     retn += num.ToString() + ", ";
                 }
-                if (count > 0)
+                if (retn.Length > 1)
                 {
                     retn = retn.Remove(retn.Length - 2);
                 }

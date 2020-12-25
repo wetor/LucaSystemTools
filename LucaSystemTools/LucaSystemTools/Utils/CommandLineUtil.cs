@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using McMaster.Extensions.CommandLineUtils;
 using ProtFont;
 using ProtImage;
@@ -152,11 +153,52 @@ namespace LucaSystem.Utils
 
                 if (ParserMode.ToLower() == "import" || ParserMode.ToLower() == "i")
                 {
-                    selclass.FileImport(FileName, OutFileName);
+                    if (File.Exists(FileName))
+                    {
+                        // 是文件
+                        selclass.FileImport(FileName, OutFileName);
+                    }
+                    else if(Directory.Exists(FileName))
+                    {
+                        // 是文件夹
+                        string outFolder = OutFileName;
+                        if (!Directory.Exists(OutFileName))
+                        {
+                            Console.WriteLine("输出目录不是文件夹，默认输出目录已更改");
+                            outFolder = Path.GetDirectoryName(OutFileName);
+                        }
+                        var files = Directory.GetFiles(FileName, "*");
+                        foreach (var file in files)
+                        {
+                            selclass.FileImport(file, Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
+                        }
+                    }
+                    
                 }
                 else if (ParserMode.ToLower() == "export" || ParserMode.ToLower() == "e")
                 {
-                    selclass.FileExport(FileName, OutFileName);
+                    
+
+                    if (File.Exists(FileName))
+                    {
+                        // 是文件
+                        selclass.FileExport(FileName, OutFileName);
+                    }
+                    else if (Directory.Exists(FileName))
+                    {
+                        // 是文件夹
+                        string outFolder = OutFileName;
+                        if (!Directory.Exists(OutFileName))
+                        {
+                            Console.WriteLine("输出目录不是文件夹，默认输出目录已更改");
+                            outFolder = Path.GetDirectoryName(OutFileName);
+                        }
+                        var files = Directory.GetFiles(FileName, "*");
+                        foreach (var file in files)
+                        {
+                            selclass.FileExport(file, Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
+                        }
+                    }
                 }
                 else
                 {

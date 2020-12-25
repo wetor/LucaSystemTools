@@ -193,6 +193,10 @@ namespace ProtScript
                 {
                     infoCount--;
                 }
+                else if (code.opcode == "LOG" && infoCount == 7)
+                {
+                    infoCount = 3;
+                }
                 info.data = new UInt16[infoCount];
                 for (int i = 0; i < infoCount; i++)
                 {

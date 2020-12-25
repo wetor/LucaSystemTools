@@ -20,7 +20,7 @@ GOSUB
 IFY    (StringSJIS, Position)
 IFN    (StringSJIS, Position)
 RETURN
-JUMP    (StringSJIS, Position)
+JUMP    (StringSJIS, UInt32)
 FARCALL (UInt16,StringSJIS)
 FARRETURN
 JUMPPOINT
@@ -51,7 +51,7 @@ STOP
 IMAGELOAD (UInt16, UInt16, !UInt16)
 IMAGEUPADTE
 ARC
-MOVE (UInt16, UInt16, UInt16, UInt16)
+MOVE (UInt16, UInt16, UInt16, !UInt16)
 MOVE2
 ROT
 PEND
