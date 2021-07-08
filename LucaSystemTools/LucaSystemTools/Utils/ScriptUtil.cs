@@ -39,7 +39,7 @@ namespace ProtScript
         }
         public static int InitOpcodeDict(string path,
             ref Dictionary<byte, ScriptOpcode> bytesToOpcodeDict,
-            ref Dictionary<string, byte> opcodeToBytesDict)//SP CL
+            ref Dictionary<string, byte> opcodeToBytesDict, GameScript game)//SP CL
         {
             string[] dic;
             int scriptVersion = 3;
@@ -65,6 +65,13 @@ namespace ProtScript
                 }
             }
             int i = 0;
+            if (game == GameScript.LB_EN)
+            {
+                bytesToOpcodeDict.Add((byte)i, new ScriptOpcode((byte)i, "UNKNOWN0"));
+                opcodeToBytesDict.Add(bytesToOpcodeDict[(byte)i].opcode, (byte)i);
+                i++;
+            }
+                
             foreach (string line in dic)
             {
                 if (line.TrimStart()[0] == ';')

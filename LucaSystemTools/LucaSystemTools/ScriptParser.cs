@@ -29,6 +29,7 @@ namespace ProtScript
         CL,
         TAWL,
         FLOWERS,
+        LB_EN,
         CUSTOM,
     }
 
@@ -88,7 +89,7 @@ namespace ProtScript
             }
 
             ScriptVersion = ScriptUtil.InitOpcodeDict(custom_game, 
-                ref decompress_dic, ref compress_dic);
+                ref decompress_dic, ref compress_dic, game);
         }
         public void Decompile(string path, string outpath)
         {

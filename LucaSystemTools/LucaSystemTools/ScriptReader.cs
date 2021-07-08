@@ -187,16 +187,20 @@ namespace ProtScript
             {
                 info = new CodeInfo(br.ReadByte());
                 codeOffset++;
-                infoCount = info.count;
-                // END指令info.count需要减一
-                if (code.opcode == "END")
+
+                infoCount = 0;
+                if (info.count >= 1)
                 {
-                    infoCount--;
+                    infoCount++;
                 }
-                else if (code.opcode == "LOG" && infoCount == 7)
+                if (info.count >= 2)
                 {
-                    infoCount = 3;
+                    infoCount++;
                 }
+                /*if (info.count == 3)
+                {
+                    Console.WriteLine(code.opcode);
+                }*/
                 info.data = new UInt16[infoCount];
                 for (int i = 0; i < infoCount; i++)
                 {
@@ -209,6 +213,56 @@ namespace ProtScript
 
             // 参数类型列表
             code.paramTypes = opcodeDict[code.opcodeIndex].param.ToArray();
+
+            // LB_EN TASK
+
+            if (code.opcodeIndex == 0x5A && code.opcode == "TASK" &&  codeLength > 12)
+            {
+                List<ParamType> tmpParamTypes = new List<ParamType>();
+                switch (br.ReadUInt16())
+                {
+                    case 0x4:
+                        if (br.ReadUInt16() == 0x6)
+                        {
+                            tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        }
+                        fs.Seek(-2, SeekOrigin.Current);
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        break;
+                    case 0x17:
+                    case 0x1C:
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUTF8, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUTF8, true));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUTF8, true));
+                        break;
+                    case 0x36:
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        break;
+                    case 0x45:
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        break;
+                    default:
+                        tmpParamTypes.AddRange(code.paramTypes);
+                        break;
+                }
+                fs.Seek(-2, SeekOrigin.Current);
+                code.paramTypes = tmpParamTypes.ToArray(); 
+                
+            }
+
+
             // 读取已知参数数据
             code.paramDatas = ReadParamData(code.paramTypes, codeLength, ref codeOffset);
             // 处理未知参数数据
@@ -416,6 +470,12 @@ namespace ProtScript
                     case DataType.StringUnicode:
                     case DataType.StringSJIS:
                     case DataType.StringUTF8:
+                        if (value.nullable && codeOffset + 2 > codeLength)
+                        {
+                            nullableSkip = true;
+                            //Console.WriteLine("{0} {1} {2}", codeOffset, codeLength, fs.Position);
+                            break;
+                        }
                         if (type == DataType.StringUnicode)
                         {
                             dataStr = Encoding.Unicode.GetString(ReadStringDoubleEnd());
@@ -428,6 +488,7 @@ namespace ProtScript
                         {
                             dataStr = Encoding.UTF8.GetString(ReadStringSingleEnd());
                         }
+                        CheckString(ref dataStr);
                         datas.Add(new ParamData(type, dataStr, dataStr));
                         break;
                     case DataType.LenStringUnicode:
@@ -446,6 +507,7 @@ namespace ProtScript
                         {
                             dataStr = Encoding.GetEncoding("Shift-Jis").GetString(br.ReadBytes(len * 2));
                         }
+                        CheckString(ref dataStr);
                         datas.Add(new ParamData(type, dataStr, dataStr));
                         break;
                     default:
@@ -460,7 +522,18 @@ namespace ProtScript
             }
             return datas;
         }
-        
+        private void CheckString(ref string str)
+        {
+            if (str.LastIndexOf('\"') > 0)
+            {
+                StringBuilder sb = new StringBuilder(str);
+                str = sb.Replace('\"', '“', 0, str.IndexOf('\"') + 1).Replace('\"', '”', 0, str.LastIndexOf('\"') + 1).ToString();
+            }
+            else if (str.LastIndexOf('❞') > 0)
+            {
+                str = str.Replace("❝", "“").Replace("❞", "”");
+            }
+        }
         private byte[] ReadStringDoubleEnd()
         {
             List<byte> buff = new List<byte>();
