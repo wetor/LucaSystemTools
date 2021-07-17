@@ -196,7 +196,7 @@ namespace ProtScript
                     string oldString = matchs[index].Groups[3].Value;
                     if(script.lines[i].paramDatas[stringIndex].valueString.Trim() == oldString.Trim())
                     {
-                        Console.WriteLine("{0} {1}", index, oldString);
+                        Console.WriteLine("{0}\n  {1}\n  =>{2}", index, oldString, matchs[index].Groups[7].Value);
                         // 替换英文文本
                         script.lines[i].paramDatas[stringIndex + 1].valueOp = matchs[index].Groups[7].Value;
                     }
