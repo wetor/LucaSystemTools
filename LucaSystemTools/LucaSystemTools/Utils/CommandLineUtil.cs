@@ -62,7 +62,10 @@ namespace LucaSystem.Utils
         [Option("-d|--debug", "Enable debug mode", CommandOptionType.NoValue)]
         public bool Debug { get; set; }
 
-        
+        [Option("-lb|--lben", "Little Busters! English Edition", CommandOptionType.NoValue)]
+        public bool LBEN { get; set; }
+
+
 
         [Option("-l|--game-list", "Show list of supported games", CommandOptionType.NoValue)]
         public bool GameList { get; set; }
@@ -72,7 +75,6 @@ namespace LucaSystem.Utils
 
         public void OnExecute()
         {
-            bool LBEN = false;
             if (Debug)
             {
                 Program.debug = true;
@@ -137,10 +139,6 @@ namespace LucaSystem.Utils
                         {
                             if (OpcodePath != "CUSTOM")
                             {
-                                if (OpcodePath == "LB_EN")
-                                {
-                                    LBEN = true;
-                                }
                                 selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true), "",
                                     FormatOld, FormatLua, FormatLuaE, FormatJson, OnlyText);
                             }
