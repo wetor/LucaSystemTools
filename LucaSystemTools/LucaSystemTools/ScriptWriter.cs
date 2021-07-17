@@ -5,6 +5,7 @@ using System.IO;
 using Newtonsoft.Json;
 using LucaSystemTools;
 using ProtScript.Entity;
+using System.Text.RegularExpressions;
 
 namespace ProtScript
 {
@@ -63,10 +64,6 @@ namespace ProtScript
                 {
                     bw.Write(new byte[2]);//长度填充
                     bw.Write(opcodeDict[code.opcode]);
-                    if (code.opcode == "END")
-                    {
-                        code.info.count++;
-                    }
                     bw.Write(code.info.ToBytes());
                 }
                 foreach (var param in code.paramDatas)
@@ -163,5 +160,55 @@ namespace ProtScript
             sr.Close();
         }
         
+        public void LoadStringLB(string txtPath, ScriptEntity readScript = null)
+        {
+            StreamReader sr = new StreamReader(txtPath, Encoding.UTF8);
+
+            string text=sr.ReadToEnd();
+            string regexStr = @"○(\d{5})\|(\d{5})○([\w\W]*?)[\r\n|\n]○([\w\W]*?)●(\d{5})\|(\d{5})●([\w\W]*?)[\r\n|\n][\r\n|\n]";
+            var matchs = Regex.Matches(text, regexStr);
+            /*foreach (Match match in matchs)
+            {
+                Console.WriteLine("{0} {1} \n{2}\n{3}", match.Groups[1], match.Groups[2], match.Groups[3], match.Groups[7]);
+                break;
+            }*/
+            sr.Close();
+            if (readScript == null)
+            {
+                return;
+            }
+            script = readScript;
+            int index = 0;
+            for(int i = 0; i < script.lines.Count; i++)
+            {
+                int stringIndex = -1;
+                for(int j=0;j< script.lines[i].paramTypes.Length;j++)
+                {
+                    if (script.lines[i].paramTypes[j].export)
+                    {
+                        stringIndex = j;
+                        break;
+                    }
+                }
+                if (stringIndex>=0)
+                {
+                    // Check
+                    string oldString = matchs[index].Groups[3].Value;
+                    if(script.lines[i].paramDatas[stringIndex].valueString.Trim() == oldString.Trim())
+                    {
+                        Console.WriteLine("{0} {1}", index, oldString);
+                        // 替换英文文本
+                        script.lines[i].paramDatas[stringIndex + 1].valueOp = matchs[index].Groups[7].Value;
+                    }
+                    else
+                    {
+                        throw new Exception("顺序不匹配！ " + matchs[index].Groups[1].Value + "  "+ oldString);
+                    }
+                    index++;
+                }
+                
+            }
+
+        }
     }
 }

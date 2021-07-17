@@ -37,16 +37,15 @@ namespace ProtScript.Entity
         public override string ToString()
         {
             string retn = "{";
+            retn += count.ToString() + ", ";
             if (data != null)
             {
                 foreach (var num in data)
                 {
                     retn += num.ToString() + ", ";
                 }
-                if (retn.Length > 1)
-                {
-                    retn = retn.Remove(retn.Length - 2);
-                }
+
+                retn = retn.Remove(retn.Length - 2);
             }
             retn += "}";
             return retn;

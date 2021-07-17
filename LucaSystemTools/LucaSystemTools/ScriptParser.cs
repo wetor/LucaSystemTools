@@ -453,7 +453,14 @@ namespace ProtScript
         }
         public override void FileExport(string path, string outpath = null)
         {
+            bool LBEN = false;
+            if (path.IndexOf("@LB@EN@") > 0) // LBEN
+            {
+                var tmp = path.Split("@LB@EN@");
 
+                path = tmp[0];
+                LBEN = true;
+            }
             string outfilepath = outpath;
             if (FormatOld)
             {
@@ -463,7 +470,17 @@ namespace ProtScript
                     outfilepath += ".txt";
                 if (Path.GetExtension(outfilepath) != ".txt")
                     outfilepath += ".txt";
-                Decompile(path, outfilepath);
+                if (!LBEN)
+                {
+                    Decompile(path, outfilepath);
+                }
+                else
+                {
+                    ScriptReader reader = new ScriptReader(path, decompress_dic, 3);
+                    reader.ReadScript();
+                    reader.SaveStringLB(outfilepath, 2);
+                }
+                
             }
             if(FormatLua || FormatLuaE || FormatJson)
             {
@@ -516,16 +533,28 @@ namespace ProtScript
         }
         public override void FileImport(string path, string outpath = null)
         {
+            // -t scr -m import 
+            // -f "D:\Download\Little Busters! English Edition\string\SEEN0513.txt" 
+            // -f2 "D:\Download\Little Busters! English Edition\SCRIPT" 
+            // -o "D:\Download\Little Busters! English Edition\Test_SEEN0513" -opcode LB_EN -lua
             if (outpath == null)
             {
                 outpath = path + ".scr";
+            }
+            string LBENPath = "";
+            if (path.IndexOf("@LB@EN@") > 0) // LBEN
+            {
+                var tmp = path.Split("@LB@EN@");
+
+                path = tmp[0];
+                LBENPath = tmp[1];
             }
             if(FormatJson || FormatLua)
             {
                 ScriptWriter scriptWriter = new ScriptWriter(outpath, compress_dic);
                 if (FormatJson)
                     scriptWriter.LoadJson(path);
-                else if(FormatLua)
+                else if (FormatLua)
                     scriptWriter.LoadLua(path);
 
                 scriptWriter.WriteScript();
@@ -533,7 +562,23 @@ namespace ProtScript
             }
             else if (FormatOld)
             {
-                Compile(path, outpath);
+                
+                if (LBENPath == "")
+                {
+                    Compile(path, outpath);
+                }
+                else
+                {
+                    ScriptReader reader = new ScriptReader(Path.Combine(LBENPath, Path.GetFileNameWithoutExtension(path)), decompress_dic, 3);
+                    reader.ReadScript();
+
+                    ScriptWriter scriptWriter = new ScriptWriter(outpath, compress_dic);
+                    scriptWriter.LoadStringLB(path, reader.script);
+                    scriptWriter.WriteScript();
+                    scriptWriter.Close();
+                }
+
+                
             }
         }
         public ParamData[] ReadParamData(ref BinaryReader tbr, List<ParamType> param)

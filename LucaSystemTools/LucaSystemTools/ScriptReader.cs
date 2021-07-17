@@ -230,8 +230,8 @@ namespace ProtScript
                         tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
                         tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
                         tmpParamTypes.Add(new ParamType(DataType.UInt16, false));
-                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
-                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false, true));
+                        tmpParamTypes.Add(new ParamType(DataType.StringUnicode, false, true));
                         break;
                     case 0x17:
                     case 0x1C:
@@ -320,12 +320,78 @@ namespace ProtScript
         /// </summary>
         /// <param name="path"></param>
         /// <param name="mode">0：review模式，仅文本；1：replace模式，id和文本；2：translate模式，对照</param>
+        public void SaveStringLB(string path, int mode = 0)
+        {
+            StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
+
+            StringFormater formater0 = delegate (int codeIndex, int index, CodeLine code)
+            {
+                return code.paramDatas[index].valueString.Replace("\n", @"\n");
+            };
+            StringFormater formater1 = delegate (int codeIndex, int index, CodeLine code)
+            {
+                string str = code.paramDatas[index].valueString.Replace("\n", @"\n");
+                var checkInt = 0;
+                if (code.info.count > 0)
+                {
+                    checkInt = code.info.data[0];
+                }
+                string checkStr = checkInt.ToString().PadLeft(5, '0'); // 校验码
+               
+                return "○" + codeIndex.ToString().PadLeft(5, '0') + "|" + checkStr + "○" + str;
+            };
+            
+            StringFormater formater2 = delegate (int codeIndex, int index, CodeLine code)
+            {
+                string str = code.paramDatas[index].valueString.Replace("\n", @"\n");
+                var checkInt = 0;
+                if (code.info.count > 0)
+                {
+                    checkInt = code.info.data[0];
+                }
+                string checkStr = checkInt.ToString().PadLeft(5, '0'); // 校验码
+                                                                       //"●(\d{5})\|(\d{8})●\s?(.*?)[\r\n|\n]"
+                return "●" + codeIndex.ToString().PadLeft(5, '0') + "|" + checkStr + "●" + str;
+            };
+            //"○(\d{5})\|(\d{5})○([\w\W]*?)○(\d{5})\|(\d{5})○([\w\W]*?)●(\d{5})\|(\d{5})●([\w\W]*?)[\r\n|\n][\r\n|\n]"
+            int i = 0;
+            foreach (var code in script.lines)
+            {
+                int tranIndex = -1;
+                for (int index = 0; index < code.paramTypes.Length; index++)
+                {
+                    if (code.paramTypes[index].export)
+                    {
+                        if (tranIndex < 0) // 以第一个导出字符串为翻译字符串
+                        {
+                            tranIndex = index;
+                        }
+                        sw.WriteLine(formater1(i, index, code));
+                    }
+                }
+                if (tranIndex > 0)
+                {
+                    if(mode == 2)
+                    {  sw.WriteLine(formater2(i, tranIndex, code));
+                    }
+                    sw.WriteLine();
+                    i++;
+                }
+                
+            }
+            sw.Close();
+        }
+        /// <summary>
+        /// 导出在OPCODE中被"@"标记的数据。可导入，需要结合json或lua
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="mode">0：review模式，仅文本；1：replace模式，id和文本；2：translate模式，对照</param>
         public void SaveString(string path, int mode = 0)
         {
             StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
 
             StringFormater formater;
-            if(mode == 1)
+            if (mode == 1)
             {
                 formater = delegate (int codeIndex, int index, CodeLine code)
                 {
@@ -343,7 +409,7 @@ namespace ProtScript
                     string indexStr = code.info.data[0].ToString().PadLeft(8, '0');
                     string codeIndexStr = codeIndex.ToString().PadLeft(5, '0');
                     //"○(\d{5})\|(\d{8})○\s?(.*?)[\r\n|\n]●(\d{5})\|(\d{8})●\s?(.*?)[\r\n|\n]"
-                    return "○" + codeIndexStr + "|" + indexStr + "○ " + str+ "\n" +
+                    return "○" + codeIndexStr + "|" + indexStr + "○ " + str + "\n" +
                     "●" + codeIndexStr + "|" + indexStr + "● " + str;
                 };
             }
@@ -357,7 +423,7 @@ namespace ProtScript
             int i = 0;
             foreach (var code in script.lines)
             {
-                for(int index = 0; index < code.paramTypes.Length; index++)
+                for (int index = 0; index < code.paramTypes.Length; index++)
                 {
                     if (code.paramTypes[index].export)
                     {

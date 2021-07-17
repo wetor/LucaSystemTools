@@ -8,10 +8,9 @@ namespace LucaSystemTools
     public class Program
     {
         public static bool debug = false;
-        public static uint toolVersion = 20201012;
+        public static uint toolVersion = 20210708;
         static void Main(string[] args)
         {
-            Test.TestMain();
             if (args.Length > 0)
             {
                 CommandLineApplication.Execute<CommandLineUtil>(args);

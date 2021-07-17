@@ -64,14 +64,7 @@ namespace ProtScript
                     scriptVersion = 2;
                 }
             }
-            int i = 0;
-            if (game == GameScript.LB_EN)
-            {
-                bytesToOpcodeDict.Add((byte)i, new ScriptOpcode((byte)i, "UNKNOWN0"));
-                opcodeToBytesDict.Add(bytesToOpcodeDict[(byte)i].opcode, (byte)i);
-                i++;
-            }
-                
+            int i = 0;                
             foreach (string line in dic)
             {
                 if (line.TrimStart()[0] == ';')

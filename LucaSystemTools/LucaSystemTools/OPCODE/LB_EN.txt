@@ -1,4 +1,5 @@
 ;Ver3
+UNKNOWN0(!UInt16,!StringUTF8,!StringUTF8)
 EQU
 EQUV
 ADD
@@ -29,9 +30,9 @@ ARFLAGSET
 COLORBG_SET
 SPLINE_SET
 SHAKELIST_SET
-MESSAGE (UInt16,StringUnicode,StringUnicode)
+MESSAGE (UInt16,@StringUnicode,@StringUnicode)
 MESSAGE_CLEAR
-SELECT ( UInt16, UInt16, UInt16, UInt16,StringUnicode,StringUnicode)
+SELECT ( UInt16, UInt16, UInt16, UInt16,@StringUnicode,@StringUnicode)
 CLOSE_WINDOW
 LOG
 LOG_PAUSE

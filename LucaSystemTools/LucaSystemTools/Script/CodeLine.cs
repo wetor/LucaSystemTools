@@ -115,12 +115,21 @@ namespace ProtScript.Entity
                     {
                         i++; // {
                         CodeInfo info = new CodeInfo(0);
+                        info.count = -1;
                         List<UInt16> datas = new List<UInt16>();
                         while (tokens[i] != "}")
                         {
-                            datas.Add(Convert.ToUInt16(tokens[i++]));
+                            if (info.count == -1)
+                            {
+                                info.count = Convert.ToUInt16(tokens[i++]);
+                            }
+                            else
+                            {
+                                datas.Add(Convert.ToUInt16(tokens[i++]));
+                            }
+                           
                         }
-                        info.count = datas.Count;
+                        // info.count = datas.Count;
                         info.data = datas.ToArray();
                         this.info = info;
                         readParam = true;

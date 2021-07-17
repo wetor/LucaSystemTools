@@ -28,6 +28,9 @@ namespace LucaSystem.Utils
         [Option(Description = "FileName or FolderName", ShortName = "f")]
         public string FileName { get; set; }
 
+        [Option(Description = "FileName or FolderName (LB_EN)", ShortName = "f2")]
+        public string FileName2 { get; set; }
+
         [Option(Description = "OutFileName or OutFolderName", ShortName = "o")]
         public string OutFileName { get; set; } = null;
 
@@ -69,6 +72,7 @@ namespace LucaSystem.Utils
 
         public void OnExecute()
         {
+            bool LBEN = false;
             if (Debug)
             {
                 Program.debug = true;
@@ -133,6 +137,10 @@ namespace LucaSystem.Utils
                         {
                             if (OpcodePath != "CUSTOM")
                             {
+                                if (OpcodePath == "LB_EN")
+                                {
+                                    LBEN = true;
+                                }
                                 selclass = new ScriptParser((GameScript)Enum.Parse(typeof(GameScript), OpcodePath, true), "",
                                     FormatOld, FormatLua, FormatLuaE, FormatJson, OnlyText);
                             }
@@ -156,7 +164,7 @@ namespace LucaSystem.Utils
                     if (File.Exists(FileName))
                     {
                         // 是文件
-                        selclass.FileImport(FileName, OutFileName);
+                        selclass.FileImport(!LBEN ? FileName : (FileName + "@LB@EN@" + FileName2), OutFileName);
                     }
                     else if(Directory.Exists(FileName))
                     {
@@ -170,7 +178,7 @@ namespace LucaSystem.Utils
                         var files = Directory.GetFiles(FileName, "*");
                         foreach (var file in files)
                         {
-                            selclass.FileImport(file, Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
+                            selclass.FileImport(!LBEN ? file : (file + "@LB@EN@" + FileName2), Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
                         }
                     }
                     
@@ -182,7 +190,7 @@ namespace LucaSystem.Utils
                     if (File.Exists(FileName))
                     {
                         // 是文件
-                        selclass.FileExport(FileName, OutFileName);
+                        selclass.FileExport(!LBEN ? FileName : (FileName + "@LB@EN@ "), OutFileName);
                     }
                     else if (Directory.Exists(FileName))
                     {
@@ -196,7 +204,7 @@ namespace LucaSystem.Utils
                         var files = Directory.GetFiles(FileName, "*");
                         foreach (var file in files)
                         {
-                            selclass.FileExport(file, Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
+                            selclass.FileExport(!LBEN ? file : (file + "@LB@EN@ "), Path.Combine(outFolder, Path.GetFileNameWithoutExtension(file)));
                         }
                     }
                 }
