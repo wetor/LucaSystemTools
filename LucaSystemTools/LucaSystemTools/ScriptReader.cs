@@ -197,7 +197,13 @@ namespace ProtScript
                 {
                     infoCount = 3;
                 }
+  
+                while (codeLength - 2 < infoCount * 2)
+                {
+                    infoCount--;
+                }
                 info.data = new UInt16[infoCount];
+               
                 for (int i = 0; i < infoCount; i++)
                 {
                     info.data[i] = br.ReadUInt16();

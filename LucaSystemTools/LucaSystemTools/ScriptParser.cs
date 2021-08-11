@@ -25,6 +25,7 @@ namespace ProtScript
         FLOWERS_PSV,
         FLOWERS2_PSV,
         FLOWERS3_PSV,
+        FLOWERS4_PSV,
         SP,
         CL,
         TAWL,

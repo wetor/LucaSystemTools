@@ -8,7 +8,7 @@ namespace LucaSystemTools
     public class Program
     {
         public static bool debug = false;
-        public static uint toolVersion = 20201012;
+        public static uint toolVersion = 20210811;
         static void Main(string[] args)
         {
             if (args.Length > 0)

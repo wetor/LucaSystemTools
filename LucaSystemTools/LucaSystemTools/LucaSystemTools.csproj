@@ -14,6 +14,7 @@
     <None Remove="OPCODE\FLOWERS_PSV.txt" />
     <None Remove="OPCODE\FLOWERS2_PSV.txt" />
     <None Remove="OPCODE\FLOWERS3_PSV.txt" />
+	<None Remove="OPCODE\FLOWERS4_PSV.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,6 +40,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="OPCODE\FLOWERS3_PSV.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+	<Content Include="OPCODE\FLOWERS4_PSV.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
