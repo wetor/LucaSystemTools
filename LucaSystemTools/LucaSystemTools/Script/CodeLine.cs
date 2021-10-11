@@ -141,7 +141,7 @@ namespace ProtScript.Entity
                         i++;
                         if (tokens[i][0] == '\"')
                         {
-                            tempStr = tokens[i].Substring(1, tokens[i].Length - 2);
+                            tempStr = tokens[i].Substring(1, tokens[i].Length - 2).Replace(@"\n", "\n");;
                             param = ScriptEntity.ToParamData(tempStr, type);
                             if (type == DataType.Position)
                             {
