@@ -1,5 +1,9 @@
+# 部分功能已在新的 [LuckSystem](https://github.com/wetor/LuckSystem) 项目中实现  
+# 此项目之后基本不会更新  
 ## LucaSystemTools ![test_release](https://github.com/YuriSizuku/LucaSystemTools/workflows/test_release/badge.svg)
 Prototype's galgame tools
+
+
 ## 文件
 
 很多图像相关的提取代码都是[deqxj00](https://github.com/wetor/LucaSystemTools/commits?author=deqxj00) 写的，脚本的话都是我写的，CZ0和Pak和一些代码来自[LucaSystem](https://github.com/marcussacana/LucaSystem)。
