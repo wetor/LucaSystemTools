@@ -391,9 +391,11 @@ namespace ProtImage
                     }
 
                 }
-
+                var pixelempty = new Pixel32_BGRA() { R = 0, G = 0, B = 0, A = 255 };
                 // 写入新的颜色表
                 var pixel = new Pixel32_BGRA();
+                //00 00 00 FF
+                // Writer.WriteStruct(ref pixelempty);
                 for (int i = 0; i < list.Count; i++)
                 {
                     pixel = list[i];
@@ -402,32 +404,35 @@ namespace ProtImage
                 // 颜色表剩余位置写入空白
                 for (int i = 0; i < 256 - list.Count; i++)
                 {
-                    var pixelempty = new Pixel32_BGRA() { R = 0, G = 0, B = 0, A = 255 };
                     Writer.WriteStruct(ref pixelempty);
                 }
 
                 Queue<byte> queue = new Queue<byte>();
 
                 byte[] bytes = new byte[Picture.Height * Picture.Width];
-
+                int count = 0;
                 for (int y = 0; y < Picture.Height; y++)
                 {
                     for (int x = 0; x < Picture.Width; x++)
                     {
                         var color = Picture.GetPixel(x, y);
-                        var color2 = new Pixel32_BGRA();
-                        color2.R = color.R;
-                        color2.G = color.G;
-                        color2.B = color.B;
-                        color2.A = color.A;
-                        uint index = (uint)list.IndexOf(color2);
-                        queue.Enqueue((byte)index);
+                        var color2 = new Pixel32_BGRA()
+                        {
+                            R = color.R,
+                            G = color.G,
+                            B = color.B,
+                            A = color.A
+                        };
+                        int index = list.IndexOf(color2);
+                        byte b = (byte)index;
+                        bytes[count] = b;
+                        count++;
                         //bytes[y * x] = (byte)index;
                     }
                 }
 
-                for (int j = 0; j < queue.Count; j++)
-                    bytes[j] = queue.Dequeue();
+                //for (int j = 0; j < queue.Count; j++)
+                //    bytes[j] = queue.Dequeue();
 
 
                 #region
@@ -473,7 +478,7 @@ namespace ProtImage
                 //}
                 #endregion
 
-                CZOutputInfo czOutput = new CZOutputInfo();
+                CZ1Header cz1Output = new CZ1Header();
 
                 var ie = bytes.ToList().GetEnumerator();
                 List<List<int>> out_list = LzwUtil.Compress(ie, 0xFEFD);
@@ -496,7 +501,7 @@ namespace ProtImage
                 }
 
                 uint totalsize_new = 0x10 + 4 * 16 + 4 + (uint)file_num * 4 * 2;
-                uint totalsize_org = 0x10 + 4 * 16 + 4 + czOutput.filecount * 4 * 2;
+                // uint totalsize_org = 0x10 + 4 * 16 + 4 + cz1Output.filecount * 4 * 2;
                 for (int k = 0; k < out_list.Count; k++)
                 {
                     for (int kk = 0; kk < out_list[k].Count; kk++)
@@ -506,21 +511,21 @@ namespace ProtImage
                     }
                 }
 
-                totalsize_org += czOutput.TotalCompressedSize * 2;
-                int diff = (int)(totalsize_org - totalsize_new);
+                //totalsize_org += czOutput.TotalCompressedSize * 2;
+                //int diff = (int)(totalsize_org - totalsize_new);
 
-                if (diff > 0)
-                {
-                    diff = diff / 2;
-                    for (uint j = 0; j < diff; j++)
-                    {
-                        Writer.Write((UInt16)0);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("超长");
-                }
+                //if (diff > 0)
+                //{
+                //    diff = diff / 2;
+                //    for (uint j = 0; j < diff; j++)
+                //    {
+                //        Writer.Write((UInt16)0);
+                //    }
+                //}
+                //else
+                //{
+                //    Console.WriteLine("超长");
+                //}
             }
             Writer.Close();
 
