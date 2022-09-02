@@ -139,6 +139,12 @@ namespace ProtImage
             public Pixel32_BGRA[] ColorPanel;
         }
 
+        public class CZ1ImageHeaderInfo
+        {
+            public CZ1HeaderPicture cz1Header;
+            public Pixel32_BGRA[] ColorPanel;
+        }
+
         //作者：Wetor
         //时间：2019.1.18
         public void PngToCZ1(string outfile)
@@ -254,12 +260,18 @@ namespace ProtImage
             {
                 cz1HeaderInfo = JsonConvert.DeserializeObject<CZ1HeaderInfo>(File.ReadAllText(infopath));
             }
-            CZ1utputInfo cz1utput = new CZ1utputInfo();
+
+            if (cz1HeaderInfo != null && cz1HeaderInfo.cz1Header.HeaderLength == 0x10) {
+                PngToCZ1(path);
+                return;
+            }
+
+            CZ1ImageHeaderInfo cz1ImageHeaderInfo = JsonConvert.DeserializeObject<CZ1ImageHeaderInfo>(File.ReadAllText(infopath));
 
             Bitmap Picture = new Bitmap(new MemoryStream(File.ReadAllBytes(path)));
             StructWriter Writer = new StructWriter(File.Open(path + ".cz1", FileMode.Create));
-            CZ1Header header = new CZ1Header();
-            if (cz1HeaderInfo == null)
+            CZ1HeaderPicture header = new CZ1HeaderPicture();
+            if (cz1ImageHeaderInfo == null)
             {
                 header.Signature = "CZ1";
                 header.HeaderLength = 0x40;
@@ -269,7 +281,7 @@ namespace ProtImage
             }
             else
             {
-                header = cz1HeaderInfo.cz1Header;
+                header = cz1ImageHeaderInfo.cz1Header;
             }
             Writer.WriteStruct(ref header);
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
@@ -427,13 +439,8 @@ namespace ProtImage
                         byte b = (byte)index;
                         bytes[count] = b;
                         count++;
-                        //bytes[y * x] = (byte)index;
                     }
                 }
-
-                //for (int j = 0; j < queue.Count; j++)
-                //    bytes[j] = queue.Dequeue();
-
 
                 #region
                 //int file_num = bytes.Length / 130554 + 1;
@@ -478,8 +485,6 @@ namespace ProtImage
                 //}
                 #endregion
 
-                CZ1Header cz1Output = new CZ1Header();
-
                 var ie = bytes.ToList().GetEnumerator();
                 List<List<int>> out_list = LzwUtil.Compress(ie, 0xFEFD);
 
@@ -501,7 +506,6 @@ namespace ProtImage
                 }
 
                 uint totalsize_new = 0x10 + 4 * 16 + 4 + (uint)file_num * 4 * 2;
-                // uint totalsize_org = 0x10 + 4 * 16 + 4 + cz1Output.filecount * 4 * 2;
                 for (int k = 0; k < out_list.Count; k++)
                 {
                     for (int kk = 0; kk < out_list[k].Count; kk++)
@@ -562,6 +566,17 @@ namespace ProtImage
     }
 
     public struct CZ1Header
+    {
+        [FString(Length = 4)]
+        public string Signature;
+        public uint HeaderLength;
+        public ushort Width;
+        public ushort Heigth;
+        public byte Colorbits;
+        //dynamic length
+    }
+
+    public struct CZ1HeaderPicture
     {
         [FString(Length = 4)]
         public string Signature;
