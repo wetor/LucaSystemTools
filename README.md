@@ -1,5 +1,6 @@
-# 部分功能已在新的 [LuckSystem](https://github.com/wetor/LuckSystem) 项目中实现  
-# 此项目之后基本不会更新  
+## This project no longer accepts issue and pull requests, new similar projects: [LuckSystem](https://github.com/wetor/LuckSystem)
+## 部分功能已在新的 [LuckSystem](https://github.com/wetor/LuckSystem) 项目中实现  
+## 此项目之后基本不会更新  
 ## LucaSystemTools ![test_release](https://github.com/YuriSizuku/LucaSystemTools/workflows/test_release/badge.svg)
 Prototype's galgame tools
 
