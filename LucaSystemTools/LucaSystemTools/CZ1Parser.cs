@@ -7,12 +7,18 @@ using System.IO;
 using System.Text;
 using LucaSystem;
 using LucaSystemTools;
+using Newtonsoft.Json;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using static LucaSystemTools.CZParserBase;
+using System.Collections;
+using System.Linq;
 
 namespace ProtImage
 {
     public class CZ1Parser : CZParserBase
     {
-        public Bitmap Export(byte[] Texture,string name="")
+        public Bitmap Export(byte[] Texture, string name = "")
         {
             StructReader Reader = new StructReader(new MemoryStream(Texture));
             CZ1Header Header = new CZ1Header();
@@ -22,6 +28,10 @@ namespace ProtImage
                 throw new BadImageFormatException();
 
             Reader.Seek(Header.HeaderLength, SeekOrigin.Begin);
+
+            CZ1HeaderInfo cz1HeaderInfo = new CZ1HeaderInfo();
+            cz1HeaderInfo.cz1Header = Header;
+
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
 
             if (Header.Colorbits == 4)//4bit
@@ -38,7 +48,7 @@ namespace ProtImage
                 }
 
                 //lmz解压
-                var bytes = Decompress(Reader,name);
+                var bytes = Decompress(Reader, name);
 
                 //解压后的像素
                 Queue<int> queue = new Queue<int>();
@@ -69,7 +79,7 @@ namespace ProtImage
                     Reader.ReadStruct(ref Pixel);
                     ColorPanel[i] = Pixel;
                 }
-
+                cz1HeaderInfo.ColorPanel = ColorPanel;
                 var bytes = Decompress(Reader);
                 Queue<int> queue = new Queue<int>();
                 foreach (var b in bytes)
@@ -118,7 +128,21 @@ namespace ProtImage
                     }
             }
             Reader.Close();
+            string json = JsonConvert.SerializeObject(cz1HeaderInfo, Formatting.Indented);
+            File.WriteAllText(name + ".json", json);
             return Picture;
+        }
+
+        public class CZ1HeaderInfo
+        {
+            public CZ1Header cz1Header;
+            public Pixel32_BGRA[] ColorPanel;
+        }
+
+        public class CZ1ImageHeaderInfo
+        {
+            public CZ1HeaderPicture cz1Header;
+            public Pixel32_BGRA[] ColorPanel;
         }
 
         //作者：Wetor
@@ -127,7 +151,7 @@ namespace ProtImage
         {
             Bitmap Picture = new Bitmap(File.Open(outfile, FileMode.Open));
             StructWriter Writer = new StructWriter(File.Open(outfile + ".cz1", FileMode.Create));
-            CZ1Header header;
+            CZ1Header header = new CZ1Header();
             header.Signature = "CZ1";
             header.HeaderLength = 0x10;
             header.Width = (ushort)Picture.Width;
@@ -227,11 +251,296 @@ namespace ProtImage
 
 
         }
-   
+
+        public void Png2CZ1New(string path)
+        {
+            CZ1HeaderInfo cz1HeaderInfo = null;
+            string infopath = path.Replace(".png", ".json");
+            if (File.Exists(infopath))
+            {
+                cz1HeaderInfo = JsonConvert.DeserializeObject<CZ1HeaderInfo>(File.ReadAllText(infopath));
+            }
+
+            if (cz1HeaderInfo != null && cz1HeaderInfo.cz1Header.HeaderLength == 0x10) {
+                PngToCZ1(path);
+                return;
+            }
+
+            CZ1ImageHeaderInfo cz1ImageHeaderInfo = JsonConvert.DeserializeObject<CZ1ImageHeaderInfo>(File.ReadAllText(infopath));
+
+            Bitmap Picture = new Bitmap(new MemoryStream(File.ReadAllBytes(path)));
+            StructWriter Writer = new StructWriter(File.Open(path + ".cz1", FileMode.Create));
+            CZ1HeaderPicture header = new CZ1HeaderPicture();
+            if (cz1ImageHeaderInfo == null)
+            {
+                header.Signature = "CZ1";
+                header.HeaderLength = 0x40;
+                header.Width = (ushort)Picture.Width;
+                header.Heigth = (ushort)Picture.Height;
+                header.Colorbits = 8;
+            }
+            else
+            {
+                header = cz1ImageHeaderInfo.cz1Header;
+            }
+            Writer.WriteStruct(ref header);
+            Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
+
+            if (header.Colorbits == 32)
+            {
+                System.Diagnostics.Debug.WriteLine(32);
+                for (int y = 0; y < Picture.Height; y++)
+                {
+                    for (int x = 0; x < Picture.Width; x++)
+                    {
+                        Writer.Write(Picture.GetPixel(x, y).R);
+                        Writer.Write(Picture.GetPixel(x, y).G);
+                        Writer.Write(Picture.GetPixel(x, y).B);
+                        Writer.Write(Picture.GetPixel(x, y).A);
+                    }
+                }
+            }
+            else if (header.Colorbits == 24)
+            {
+                System.Diagnostics.Debug.WriteLine(24);
+                for (int y = 0; y < Picture.Height; y++)
+                {
+                    for (int x = 0; x < Picture.Width; x++)
+                    {
+                        Writer.Write(Picture.GetPixel(x, y).R);
+                        Writer.Write(Picture.GetPixel(x, y).G);
+                        Writer.Write(Picture.GetPixel(x, y).B);
+                    }
+                }
+            }
+            else if (header.Colorbits == 8)
+            {
+                System.Diagnostics.Debug.WriteLine(8);
+                List<Pixel32_BGRA> list = new List<Pixel32_BGRA>();
+                for (int y = 0; y < Picture.Height; y++)
+                {
+                    for (int x = 0; x < Picture.Width; x++)
+                    {
+                        var color = Picture.GetPixel(x, y);
+                        var color2 = new Pixel32_BGRA();
+                        color2.R = color.R;
+                        color2.G = color.G;
+                        color2.B = color.B;
+                        color2.A = color.A;
+                        if (!list.Contains(color2))
+                        {
+                            list.Add(color2);
+                        }
+                    }
+                }
+
+                //颜色大于256
+                if (list.Count > 256)
+                {
+                    Console.WriteLine("Over 256 Color!!");
+                    //调用pngquant png 8bit缩减
+                    if (File.Exists("pngquant.exe") || File.Exists("pngquant"))
+                    {
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        {
+                            var psi = new ProcessStartInfo("pngquant.exe") { RedirectStandardOutput = true };
+                            psi.Arguments = " 256 " + path + " --ext tmp ";
+                            var proc = Process.Start(psi);
+                            if (proc == null)
+                            {
+                                Console.WriteLine("Can not exec.");
+                            }
+                            else
+                            {
+                                using (var sr = proc.StandardOutput)
+                                {
+                                    while (!sr.EndOfStream)
+                                    {
+                                        Console.WriteLine(sr.ReadLine());
+                                    }
+
+                                    if (!proc.HasExited)
+                                    {
+                                        proc.Kill();
+                                    }
+                                }
+                            }
+                            string pathtmp = path.Replace(".png", "tmp");
+                            Picture = new Bitmap(new MemoryStream(File.ReadAllBytes(pathtmp)));
+                            File.Delete(pathtmp);
+                        }
+                        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                        {
+                            //TODO
+                        }
+                        else
+                        {
+                            //TODO
+                        }
+
+                        list.Clear();
+                        // 这里根据 pngquant 创建的新图获取颜色表
+                        for (int y = 0; y < Picture.Height; y++)
+                        {
+                            for (int x = 0; x < Picture.Width; x++)
+                            {
+                                var color = Picture.GetPixel(x, y);
+                                var color2 = new Pixel32_BGRA();
+                                color2.R = color.R;
+                                color2.G = color.G;
+                                color2.B = color.B;
+                                color2.A = color.A;
+                                if (!list.Contains(color2))
+                                {
+                                    list.Add(color2);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Need pngquant !! Download From https://pngquant.org/");
+                    }
+
+                }
+                var pixelempty = new Pixel32_BGRA() { R = 0, G = 0, B = 0, A = 255 };
+                // 写入新的颜色表
+                var pixel = new Pixel32_BGRA();
+                //00 00 00 FF
+                // Writer.WriteStruct(ref pixelempty);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    pixel = list[i];
+                    Writer.WriteStruct(ref pixel);
+                }
+                // 颜色表剩余位置写入空白
+                for (int i = 0; i < 256 - list.Count; i++)
+                {
+                    Writer.WriteStruct(ref pixelempty);
+                }
+
+                Queue<byte> queue = new Queue<byte>();
+
+                byte[] bytes = new byte[Picture.Height * Picture.Width];
+                int count = 0;
+                for (int y = 0; y < Picture.Height; y++)
+                {
+                    for (int x = 0; x < Picture.Width; x++)
+                    {
+                        var color = Picture.GetPixel(x, y);
+                        var color2 = new Pixel32_BGRA()
+                        {
+                            R = color.R,
+                            G = color.G,
+                            B = color.B,
+                            A = color.A
+                        };
+                        int index = list.IndexOf(color2);
+                        byte b = (byte)index;
+                        bytes[count] = b;
+                        count++;
+                    }
+                }
+
+                #region
+                //int file_num = bytes.Length / 130554 + 1;
+                //List<int[]> out_list = new List<int[]>();
+                //Writer.Write(file_num);
+                //for (int k = 0; k < file_num; k++)
+                //{
+                //    List<int> listBytes = new List<int>();
+                //    StringBuilder decompressed = new StringBuilder();
+                //    byte[] tmp_bytes = new byte[130554];
+                //    if (k == file_num - 1)
+                //        Array.Copy(bytes, k * 130554, tmp_bytes, 0, bytes.Length - k * 130554);
+                //    else
+                //        Array.Copy(bytes, k * 130554, tmp_bytes, 0, 130554);
+
+
+                //    foreach (char kk in tmp_bytes)
+                //    {
+                //        decompressed.Append(kk);
+                //    }
+                //    listBytes = LzwUtil.Compress(decompressed.ToString());
+                //    out_list.Add(listBytes.ToArray());
+                //    Writer.Write(listBytes.Count);
+                //    System.Diagnostics.Debug.WriteLine("{0}", k);
+                //    if (k == file_num - 1)
+                //    {
+                //        Writer.Write(bytes.Length - k * 130554);
+                //    }
+                //    else
+                //    {
+                //        Writer.Write(130554);
+                //    }
+                //}
+
+                //for (int k = 0; k < out_list.Count; k++)
+                //{
+                //    for (int kk = 0; kk < out_list[k].Length; kk++)
+                //    {
+                //        Writer.Write((UInt16)out_list[k][kk]);
+                //    }
+
+                //}
+                #endregion
+
+                var ie = bytes.ToList().GetEnumerator();
+                List<List<int>> out_list = LzwUtil.Compress(ie, 0xFEFD);
+
+                foreach (var item in out_list)
+                {
+                    Console.WriteLine("add compressed count :" + item.Count);
+                    Console.WriteLine(item.Count);
+                    Console.WriteLine(LzwUtil.Decompress(item).Length);
+                }
+
+                int file_num = out_list.Count;
+                Writer.Write(out_list.Count);
+
+                for (int k = 0; k < out_list.Count; k++)
+                {
+                    Writer.Write(out_list[k].Count);
+                    Writer.Write(LzwUtil.Decompress(out_list[k]).Length);
+                    System.Diagnostics.Debug.WriteLine("{0}", k);
+                }
+
+                uint totalsize_new = 0x10 + 4 * 16 + 4 + (uint)file_num * 4 * 2;
+                for (int k = 0; k < out_list.Count; k++)
+                {
+                    for (int kk = 0; kk < out_list[k].Count; kk++)
+                    {
+                        Writer.Write((UInt16)out_list[k][kk]);
+                        totalsize_new += 2;
+                    }
+                }
+
+                //totalsize_org += czOutput.TotalCompressedSize * 2;
+                //int diff = (int)(totalsize_org - totalsize_new);
+
+                //if (diff > 0)
+                //{
+                //    diff = diff / 2;
+                //    for (uint j = 0; j < diff; j++)
+                //    {
+                //        Writer.Write((UInt16)0);
+                //    }
+                //}
+                //else
+                //{
+                //    Console.WriteLine("超长");
+                //}
+            }
+            Writer.Close();
+
+
+        }
+
+
         public void CZ1ToPng(string infile)
         {
             BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
-            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
+            Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length), infile);
             texture.Save(infile + ".png", ImageFormat.Png);
             br.Close();
         }
@@ -241,13 +550,20 @@ namespace ProtImage
             CZ1ToPng(name);
         }
 
-        public override void FileImport(string name, string outpath = null)
+        public override void FileImport(string path, string outpath = null)
         {
-            PngToCZ1(name);
+            // PngToCZ1(name);
+            Png2CZ1New(path);
         }
     }
 
-
+    public class CZ1utputInfo
+    {
+        public uint TotalRawSize;
+        public uint TotalCompressedSize;
+        public uint filecount;
+        public List<CZBlockInfo> blockinfo = new List<CZBlockInfo>();
+    }
 
     public struct CZ1Header
     {
@@ -260,7 +576,22 @@ namespace ProtImage
         //dynamic length
     }
 
-
+    public struct CZ1HeaderPicture
+    {
+        [FString(Length = 4)]
+        public string Signature;
+        public uint HeaderLength;
+        public ushort Width;
+        public ushort Heigth;
+        public uint Colorbits;
+        public ushort ScreenPosX;
+        public ushort ScreenPosY;
+        public ushort picWidth;
+        public ushort PicHeight;
+        public ushort screenWidth;
+        public ushort screeHeight;
+        //dynamic length
+    }
 
 
 }
